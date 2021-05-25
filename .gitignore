@@ -1,0 +1,7 @@
+*.vtk
+
+/contrib/AMGX/*
+
+/x64/*
+
+resMatrix.txt

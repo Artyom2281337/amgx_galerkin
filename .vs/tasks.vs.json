@@ -1,0 +1,10 @@
+{
+  "version": "0.2.1",
+  "tasks": [
+    {
+      "taskLabel": "задача-amgx_galerkin_2d",
+      "appliesTo": "/",
+      "type": "launch"
+    }
+  ]
+}
