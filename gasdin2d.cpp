@@ -2314,55 +2314,63 @@ float GetQyBoundary(int iCell, int iCoeff)
     }
 }
 
-void initRightPart(float *lastLayerSolution, float *rightPart_data)
+void initRightPart(float* lastLayerSolution, float* rightPart_data)
 {
-    const int qxBlock = 0;
-    const int qyBlock = 1;
-    const int uBlock = 2;
+	const int qxBlock = 0;
+	const int qyBlock = 1;
+	const int uBlock = 2;
 
-    int iCell = 0;
-    int iSmallBlockId = 0;
+	int iCell = 0;
+	int iSmallBlockId = 0;
 
-    A_size = A_block_size * cellsCount;
+	A_size = A_block_size * cellsCount;
 
-    for (int i = 0; i < A_size; i++) {
+	for (int i = 0; i < A_size; i++) {
 
-        if (((i % A_small_block_size) == 0) && (i != 0)) {
-            iSmallBlockId++;
-        }
+		if (((i % A_small_block_size) == 0) && (i != 0)) {
+			iSmallBlockId++;
+		}
 
-        if (((i % A_block_size) == 0) && (i != 0)) {
-            iCell++;
-            iSmallBlockId = 0;
-        }
+		if (((i % A_block_size) == 0) && (i != 0)) {
+			iCell++;
+			iSmallBlockId = 0;
+		}
 
-    	// rowId in each small block
-        int rowId = i % A_small_block_size;
+		// rowId in each small block
+		int rowId = i % A_small_block_size;
 
-        float fullInt = 0.0;
+		float fullInt = 0.0;
 
-        if (iSmallBlockId == uBlock) {
-            for (int j = 0; j < A_small_block_size; j++)
-            {
-                float tmpInt = 0.0;
+		if (iSmallBlockId == uBlock) {
+			for (int j = 0; j < A_small_block_size; j++)
+			{
+				float tmpInt = 0.0;
 
-                int iRowU = (iCell * A_block_size + 6) + j;
+				int iRowU = (iCell * A_block_size + 6) + j;
 
-                for (int iGP = 0; iGP < cellGPCount; iGP++)
-                {
-                    tmpInt += cellWGP[iGP] * baseF(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
-                }
+				for (int iGP = 0; iGP < cellGPCount; iGP++)
+				{
 
-                tmpInt *= (cellJ[iCell] * lastLayerSolution[iRowU]);
+					float bfDFDx = baseDFDx(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+					float bfDFDy = baseDFDy(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
 
-                tmpInt /= TAU;
+					float cGP1 = edgeWGP[iGP] * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
 
-                fullInt += tmpInt;
-            }
+					tmpInt += cellWGP[iGP] * baseF(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+						+ TAU*TAU*cellWGP[iGP] * (bfDFDx + bfDFDy) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP])
+						- TAU*TAU*(edgeNormal[i].x * cGP1) - (edgeNormal[i].y * cGP1);
+				}
 
-            rightPart_data[i] = fullInt;
-        }
-    }
+				tmpInt *= (cellJ[iCell] * lastLayerSolution[iRowU]);
+
+				tmpInt /= TAU;
+
+				fullInt += tmpInt;
+			}
+
+			rightPart_data[i] = fullInt;
+		}
+	}
 }
 
 // initialization matrix for implicit method
@@ -2382,22 +2390,22 @@ void initMatrix(CSRMatrix& A)
 	// begin matrix initialization
 	for (int i = 0; i < A_size; i++)
 	{
-        if ((i % A_small_block_size) == 0 && (i != 0))
-        {
-            iSmallBlockId++;
-        }
+		if ((i % A_small_block_size) == 0 && (i != 0))
+		{
+			iSmallBlockId++;
+		}
 
-        if ((i % A_block_size) == 0 && (i != 0))
-        {
-            iCell++;
-            iSmallBlockId = 0;
-        }
+		if ((i % A_block_size) == 0 && (i != 0))
+		{
+			iCell++;
+			iSmallBlockId = 0;
+		}
 
-	    // variable for current colum
+		// variable for current colum
 		int colId = iCell * A_block_size + iSmallBlockId * A_small_block_size;
 
-	    // rowId in each small block
-		int rowId = i % A_small_block_size;	
+		// rowId in each small block
+		int rowId = i % A_small_block_size;
 
 		// сalculate the same values of the matrix A
 		for (int j = 0; j < A_small_block_size; j++)
@@ -2442,7 +2450,7 @@ void initMatrix(CSRMatrix& A)
 			}
 		}
 		// calculate vol integral values for qy-block
-		else if (iSmallBlockId == qyBlock) 
+		else if (iSmallBlockId == qyBlock)
 		{
 			for (int j = 0; j < A_small_block_size; j++)
 			{
@@ -2485,15 +2493,15 @@ void initMatrix(CSRMatrix& A)
 			}
 		}
 	}
-
+	/*
 	// calculate surf integral
 	int c1, c2;
 	bool isBoundary = false;
 	for (int i = 0; i < edgesCount; i++)
-	{
-		c1 = edgeCell1[i];	
-		c2 = edgeCell2[i];	
-		if (c2 >= 0) {
+	{ 
+		c1 = edgeCell1[i];
+		c2 = edgeCell2[i];
+		if (c2 >= 0) { 
 			isBoundary = false;
 			int iRowU1 = c1 * A_block_size + 6;
 			int iRowU2 = c2 * A_block_size + 6;
@@ -2503,11 +2511,11 @@ void initMatrix(CSRMatrix& A)
 			int iRowQx2 = c2 * A_block_size;
 
 			int iColU1 = c1 * A_block_size + uBlock * A_small_block_size;
-            int iColU2 = c2 * A_block_size + uBlock * A_small_block_size;
-            int iColQy1 = c1 * A_block_size + qyBlock * A_small_block_size;
-            int iColQy2 = c2 * A_block_size + qyBlock * A_small_block_size;
-            int iColQx1 = c1 * A_block_size + qxBlock * A_small_block_size;
-            int iColQx2 = c2 * A_block_size + qxBlock * A_small_block_size;
+			int iColU2 = c2 * A_block_size + uBlock * A_small_block_size;
+			int iColQy1 = c1 * A_block_size + qyBlock * A_small_block_size;
+			int iColQy2 = c2 * A_block_size + qyBlock * A_small_block_size;
+			int iColQx1 = c1 * A_block_size + qxBlock * A_small_block_size;
+			int iColQx2 = c2 * A_block_size + qxBlock * A_small_block_size;
 
 			for (int m = 0; m < funcCount; m++)
 			{
@@ -2576,9 +2584,9 @@ void initMatrix(CSRMatrix& A)
 		else { 
 			isBoundary = true;
 			int iRowU1 = c1 * A_block_size + 6;
-            int iColU1 = c1 * A_block_size + uBlock * A_small_block_size;
+			int iColU1 = c1 * A_block_size + uBlock * A_small_block_size;
 
-			for (int m = 0; m < funcCount; m++) 
+			for (int m = 0; m < funcCount; m++)
 			{
 				for (int j = 0; j < A_small_block_size; j++)
 				{
@@ -2599,6 +2607,6 @@ void initMatrix(CSRMatrix& A)
 					A.add(iRowU1Current, iColU1 + j, -tmpIntU1);
 				}
 			}
-		}
-	}
+		}*/
 }
+	
