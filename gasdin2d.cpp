@@ -2358,7 +2358,7 @@ void initRightPart(float* lastLayerSolution, float* rightPart_data)
 
 					tmpInt += cellWGP[iGP] * baseF(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
 						+ TAU*TAU*cellWGP[iGP] * (bfDFDx + bfDFDy) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP])
-						- TAU*TAU*(edgeNormal[i].x * cGP1) - (edgeNormal[i].y * cGP1);
+						- TAU*TAU*((edgeNormal[i].x * cGP1) - (edgeNormal[i].y * cGP1));
 				}
 
 				tmpInt *= (cellJ[iCell] * lastLayerSolution[iRowU]);
