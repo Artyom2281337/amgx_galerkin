@@ -44,11 +44,11 @@ const float	MM_DX = 1. / 160.;
 
 
 //! параметры сетки
-const int NX = 20;
-const int NY = 20;
+const int NX = 10;
+const int NY = 10;
 
 // число узлов(и ребер) в одной ячейке.
-const int countNodesInCell = 3; 
+const int countNodesInCell = 3;
 
 const float XMIN = 0.0;	//0.0
 const float XMAX = 1.0;	//1.0
@@ -60,63 +60,63 @@ const float HY = (YMAX - YMIN) / NY;
 
 //! узлы
 int			nodesCount;
-Point	*	nodes;
+Point* nodes;
 
 //! ячейки
 int			cellsCount;
-int		**	cellNodes;
-int		**	cellNeigh;
-int		**	cellEdges;
-int		*	cellType;
-float	*	cellS;
+int** cellNodes;
+int** cellNeigh;
+int** cellEdges;
+int* cellType;
+float* cellS;
 //Point	*	cellC;
-float  *   cellCx;
-float  *   cellCy;
-float  *   cellCz;
-bool	*	cellIsBound;
+float* cellCx;
+float* cellCy;
+float* cellCz;
+bool* cellIsBound;
 
 //! ребра
 int			edgesCount;
-int		*	edgeNode1;
-int		*	edgeNode2;
-Vector	*	edgeNormal;
-float	*	edgeL;
-int		*	edgeCell1;
-int		*	edgeCell2;
-int		*	edgeType;
-Point	*	edgeC;
+int* edgeNode1;
+int* edgeNode2;
+Vector* edgeNormal;
+float* edgeL;
+int* edgeCell1;
+int* edgeCell2;
+int* edgeType;
+Point* edgeC;
 
 //! Коэффициенты масштабирования
 //Vector	*	cellDX;
-float		*	cellDXx;
-float		*	cellDXy;
-float		*	cellDXz;
+float* cellDXx;
+float* cellDXy;
+float* cellDXz;
 
 //! массивы переменных
-float		*u, *wx, *wy, *wz;
-float		*uOld, *wxOld, *wyOld, *wzOld;
-float		*fU, *fWx, *fWy, *fWz;
-float		*fUOld, *fWxOld, *fWyOld, *fWzOld;
+float* u, * wx, * wy, * wz;
+float* uOld, * wxOld, * wyOld, * wzOld;
+float* fU, * fWx, * fWy, * fWz;
+float* fUOld, * fWxOld, * fWyOld, * fWzOld;
 
 float		resU, resWx, resWy, resWz;
 //float		**intU, **intWx, **intWy, **intFi;
-float	    *intU, *intWx, *intWy, *intWz;
-float      **intFi;					//!< интегралы в правой части
+float* intU, * intWx, * intWy, * intWz;
+float** intFi;					//!< интегралы в правой части
 
 int funcCount = 3;
-float		*cellA, *cellInvA;
-float		*matrA, *matrInvA;								//!< матрица масс
+float* cellA, * cellInvA;
+float* matrA, * matrInvA;								//!< матрица масс
 															//Point		**edgeGP, **cellGP;									//!< óçëû êâàäðàòóð Ãàóññà
 															//Point		**edgeGP, *cellGP;
-Point		**edgeGP;
-float		*cellGPx;
-float		*cellGPy;
-float		*cellGPz;
-float		*edgeWGP, *edgeJ;	//!< веса и коэффициенты преобразования для квадратур Гаусса
-float		*cellWGP, *cellJ;
+Point** edgeGP;
+float* cellGPx;
+float* cellGPy;
+float* cellGPz;
+float* edgeWGP, * edgeJ;	//!< веса и коэффициенты преобразования для квадратур Гаусса
+float* cellWGP, * cellJ;
 int			edgeGPCount, cellGPCount;
 
-FILE	*	fileLog;
+FILE* fileLog;
 
 int step;
 float t;
@@ -126,7 +126,7 @@ float t;
 
 // begin structures for neyavniy methods
 
-float	*b;
+float* b;
 int A_size;
 const int A_block_size = 9;
 const int A_small_block_size = 3;
@@ -148,7 +148,7 @@ void calcGradientsSurfIntegral();
 void calcNewGradientValues();
 void save(int);					//!<	Сохранение текущих значений в файл.
 void writeVTK(char*, int);
-void writeVTK_AMGX(char*, int, float *currentLayerSolution);
+void writeVTK_AMGX(char*, int, float* currentLayerSolution);
 
 float	baseF(int, int, float, float);
 float	baseDFDx(int, int, float, float);
@@ -163,11 +163,11 @@ void calcEdgeGP(int iEdge);
 void cellAddNeigh(int c1, int c2);
 void GetK(float&, float&, float&, float&);
 void copyToOld();
-void copyToOld(float *lastLayerSolution, float *currentLayerSolution, int N);
+void copyToOld(float* lastLayerSolution, float* currentLayerSolution, int N);
 void printU();
-void initRightPart(float *lastLayerSolution, float *rightPart_data);
-void inverseMatr(float* a_src, float *am, int N);
-void inverseMatr__(float** a_src, float **am, int N);
+void initRightPart(float* lastLayerSolution, float* rightPart_data);
+void inverseMatr(float* a_src, float* am, int N);
+void inverseMatr__(float** a_src, float** am, int N);
 void OutPut(const char* str, ...);
 int __getEdgeByCells(int c1, int c2);
 
@@ -179,9 +179,9 @@ float min(float, float);
 float max(float, float, float);
 float min(float, float, float);
 inline float zero(float a) { return (abs(a) < EPS) ? 0.0 : a; }
-inline float pow_2(float x) { return x*x; }
-inline float pow_3(float x) { return x*x*x; }
-inline float pow_4(float x) { return x*x*x*x; }
+inline float pow_2(float x) { return x * x; }
+inline float pow_3(float x) { return x * x * x; }
+inline float pow_4(float x) { return x * x * x * x; }
 
 int main()
 {
@@ -200,16 +200,23 @@ int main()
 	initData();
 
 	// init base structures
-	float *b_data = new float[A_block_size * cellsCount];
-	float *lastLayerSolution = new float[A_block_size * cellsCount];
-	float *currentLayerSolution = new float[A_block_size * cellsCount];
+	float* b_data = new float[A_block_size * cellsCount];
+	float* lastLayerSolution = new float[A_block_size * cellsCount];
+	float* currentLayerSolution = new float[A_block_size * cellsCount];
 
 	memset(b_data, 0.0, sizeof(float));
-    memset(lastLayerSolution, 0.0, sizeof(float));	// check info
+	memset(lastLayerSolution, 0.0, sizeof(float));	// check info
 	memset(currentLayerSolution, 0.0, sizeof(float));
 
+	printf("%f\n", A_block_size * cellsCount);
+
+	for (int iCell = 0; iCell < 9 * NX * NY * 2; iCell++) {
+		lastLayerSolution[iCell] = 0.0;
+		b_data[iCell] = 0.0;
+	}
+
 	for (int iCell = 0; iCell < cellsCount; iCell++) {
-        lastLayerSolution[A_block_size * iCell + 6] = sin(cellCx[iCell] * M_PI) * sin(cellCy[iCell] * M_PI);
+		lastLayerSolution[A_block_size * iCell + 6] = sin(cellCx[iCell] * M_PI) * sin(cellCy[iCell] * M_PI);
 	}
 
 	// begin AMGX init
@@ -217,39 +224,46 @@ int main()
 	AMGX_initialize_plugins();
 
 	AMGX_config_handle config;
-    AMGX_config_create_from_file(&config, "config.json");
+	AMGX_config_create_from_file(&config, "config.json");
 
-    AMGX_resources_handle rsrc;
-    AMGX_resources_create_simple(&rsrc, config);
+	AMGX_resources_handle rsrc;
+	AMGX_resources_create_simple(&rsrc, config);
 
-    AMGX_solver_handle solver;
-    AMGX_matrix_handle A_amgx;
-    AMGX_vector_handle b_amgx;
-    AMGX_vector_handle solution_amgx;
+	AMGX_solver_handle solver;
+	AMGX_matrix_handle A_amgx;
+	AMGX_vector_handle b_amgx;
+	AMGX_vector_handle solution_amgx;
 
-    AMGX_solver_create(&solver, rsrc, AMGX_mode_dFFI, config);
-    AMGX_matrix_create(&A_amgx, rsrc, AMGX_mode_dFFI);
-    AMGX_vector_create(&b_amgx, rsrc, AMGX_mode_dFFI);
-    AMGX_vector_create(&solution_amgx, rsrc, AMGX_mode_dFFI);
+	AMGX_solver_create(&solver, rsrc, AMGX_mode_dFFI, config);
+	AMGX_matrix_create(&A_amgx, rsrc, AMGX_mode_dFFI);
+	AMGX_vector_create(&b_amgx, rsrc, AMGX_mode_dFFI);
+	AMGX_vector_create(&solution_amgx, rsrc, AMGX_mode_dFFI);
 	// end AMGX init
 
 	CSRMatrix matrix(A_block_size * cellsCount);
 
 	initRightPart(lastLayerSolution, b_data);
 
+	FILE* fp = fopen("right_part_start.txt", "w");
+
+	for (int i = 0; i < A_size; i++)
+	{
+		fprintf(fp, "%f\n", b_data[i]);
+	}
+
 	initMatrix(matrix);
 
 	matrix.printToFile("resMatrix.txt");
 
 	int n_amgx = A_block_size * cellsCount;
-	int nnz_amgx = A_small_block_size * A_small_block_size * 3 * cellsCount;
+	int nnz_amgx = A_small_block_size * A_small_block_size * A_block_size * cellsCount;
 
-    AMGX_matrix_upload_all(A_amgx, n_amgx, nnz_amgx, 1, 1, matrix.ia, matrix.ja, matrix.a, 0);
+	AMGX_matrix_upload_all(A_amgx, n_amgx, nnz_amgx, 1, 1, matrix.ia, matrix.ja, matrix.a, 0);
 	AMGX_vector_upload(b_amgx, n_amgx, 1, b_data);
-    AMGX_vector_set_zero(solution_amgx, n_amgx, 1);
+	AMGX_vector_set_zero(solution_amgx, n_amgx, 1);
 	AMGX_solver_setup(solver, A_amgx);
 
-    AMGX_pin_memory(currentLayerSolution, n_amgx * sizeof(float));  // only here???
+	AMGX_pin_memory(currentLayerSolution, n_amgx * sizeof(float));  // only here???
 
 	//AMGX_write_system(A_amgx, b_amgx, solution_amgx, "static_system.mtx");
 
@@ -261,7 +275,7 @@ int main()
 	//copyToOld();
 	//writeVTK((char*)TASK_NAME, 0);
 
-    writeVTK_AMGX((char*)TASK_NAME, step, lastLayerSolution);
+	writeVTK_AMGX((char*)TASK_NAME, step, lastLayerSolution);
 
 	while (t < TMAX) {
 		t += TAU;
@@ -275,27 +289,36 @@ int main()
 
 		AMGX_vector_download(solution_amgx, currentLayerSolution);
 
+		if (step == 1) {
+			FILE* fp1 = fopen("right_part_start_1.0.txt", "w");
+
+			for (int i = 0; i < A_block_size * cellsCount; i++)
+			{
+				fprintf(fp1, "%f\n", currentLayerSolution[i]);
+			}
+		}
+
 		copyToOld(lastLayerSolution, currentLayerSolution, n_amgx);
 
 		initRightPart(lastLayerSolution, b_data);
 
 		AMGX_vector_upload(b_amgx, n_amgx, 1, b_data);
 
-        if (step % SAVE_STEP == 0)
-        {
-            writeVTK_AMGX((char*)TASK_NAME, step, currentLayerSolution);//save(step);
-        }
-        if (step % 100 == 0)
-        {
-            OutPut("%8d | time: %15.8e | U: %15.8e | WX: %15.8e | WY: %15.8e |\n", step, t, resU, resWx, resWy);
-        }
-        if(step == 700)
-        {
-            printf("runtime = %f", (clock() / 1000.0));
-        }
+		if (step % SAVE_STEP == 0)
+		{
+			writeVTK_AMGX((char*)TASK_NAME, step, currentLayerSolution);//save(step);
+		}
+		if (step % 100 == 0)
+		{
+			OutPut("%8d | time: %15.8e | U: %15.8e | WX: %15.8e | WY: %15.8e |\n", step, t, resU, resWx, resWy);
+		}
+		if (step == 700)
+		{
+			printf("runtime = %f", (clock() / 1000.0));
+		}
 
 		memset(currentLayerSolution, 0.0, sizeof(float));
-        AMGX_vector_set_zero(solution_amgx, n_amgx, 1);
+		AMGX_vector_set_zero(solution_amgx, n_amgx, 1);
 
 		// ************ end AMGX solver ************
 
@@ -303,23 +326,14 @@ int main()
 		/*memset(intU, 0, sizeof(float) * cellsCount * funcCount);
 		memset(intWx, 0, sizeof(float) * cellsCount * funcCount);
 		memset(intWy, 0, sizeof(float) * cellsCount * funcCount);
-
 		calcGradientsVolIntegral();
-
 		calcGradientsSurfIntegral();
-
 		calcNewGradientValues();
-
 		calcIntegralVol();
-
 		calcIntegralSurf();
-
 		calcNewValues();
-
 		printU();
-
 		copyToOld();
-
 		if (step % SAVE_STEP == 0)
 		{
 			writeVTK((char*)TASK_NAME, step);//save(step);
@@ -334,7 +348,7 @@ int main()
 		}*/
 	}
 
-	
+
 	//system("pause");
 
 	destroyGrid();
@@ -353,14 +367,14 @@ int main()
 	return 0;
 }
 
-void copyToOld(float *lastLayerSolution, float *currentLayerSolution, int N) {
+void copyToOld(float* lastLayerSolution, float* currentLayerSolution, int N) {
 	for (int i = 0; i < N; i++) {
 		lastLayerSolution[i] = currentLayerSolution[i];
 	}
 }
 
 void printU() {
-	FILE * fp = fopen("u_cpu_res", "w");
+	FILE* fp = fopen("u_cpu_res", "w");
 	for (int i = 0; i < cellsCount; i++) {
 		for (int j = 0; j < funcCount; j++) {
 			fprintf(fp, "%f ", fU[i * funcCount + j]);
@@ -390,7 +404,7 @@ void initGrid()
 
 	int k = 0;
 	for (int j = 0; j <= NY; j++)
-	{ 
+	{
 		float y = YMIN + HY * j;
 		for (int i = 0; i <= NX; i++)
 		{
@@ -437,14 +451,14 @@ void initGrid()
 	{
 		for (int i = 0; i < NX; i++)
 		{
-			cellNodes[iCell][0] = i + (NX + 1)*j;
-			cellNodes[iCell][1] = i + 1 + (NX + 1)*j;
-			cellNodes[iCell][2] = i + (NX + 1)*(j + 1);
+			cellNodes[iCell][0] = i + (NX + 1) * j;
+			cellNodes[iCell][1] = i + 1 + (NX + 1) * j;
+			cellNodes[iCell][2] = i + (NX + 1) * (j + 1);
 
 			cellCx[iCell] = (nodes[cellNodes[iCell][0]].x + nodes[cellNodes[iCell][1]].x + nodes[cellNodes[iCell][2]].x) / 3.0;
 			cellCy[iCell] = (nodes[cellNodes[iCell][0]].y + nodes[cellNodes[iCell][1]].y + nodes[cellNodes[iCell][2]].y) / 3.0;
 			cellS[iCell] = abs((nodes[cellNodes[iCell][0]].x - nodes[cellNodes[iCell][2]].x) * (nodes[cellNodes[iCell][1]].y - nodes[cellNodes[iCell][2]].y)
-				- (nodes[cellNodes[iCell][1]].x - nodes[cellNodes[iCell][2]].x)*(nodes[cellNodes[iCell][0]].y - nodes[cellNodes[iCell][2]].y));
+				- (nodes[cellNodes[iCell][1]].x - nodes[cellNodes[iCell][2]].x) * (nodes[cellNodes[iCell][0]].y - nodes[cellNodes[iCell][2]].y));
 
 			edgeNode1[iEdge] = cellNodes[iCell][0];
 			edgeNode2[iEdge] = cellNodes[iCell][1];
@@ -454,7 +468,7 @@ void initGrid()
 			edgeCell2[iEdge] = iCell - NX * 2 + 1;
 			edgeNormal[iEdge].x = nodes[edgeNode2[iEdge]].y - nodes[edgeNode1[iEdge]].y;
 			edgeNormal[iEdge].y = nodes[edgeNode1[iEdge]].x - nodes[edgeNode2[iEdge]].x;		// warning, x <--> y
-			edgeL[iEdge] = sqrt(edgeNormal[iEdge].x*edgeNormal[iEdge].x + edgeNormal[iEdge].y*edgeNormal[iEdge].y);
+			edgeL[iEdge] = sqrt(edgeNormal[iEdge].x * edgeNormal[iEdge].x + edgeNormal[iEdge].y * edgeNormal[iEdge].y);
 			edgeNormal[iEdge].x /= edgeL[iEdge];
 			edgeNormal[iEdge].y /= edgeL[iEdge];
 			cellAddNeigh(edgeCell1[iEdge], edgeCell2[iEdge]);
@@ -478,7 +492,7 @@ void initGrid()
 			edgeCell2[iEdge] = iCell + 1;
 			edgeNormal[iEdge].x = nodes[edgeNode2[iEdge]].y - nodes[edgeNode1[iEdge]].y;
 			edgeNormal[iEdge].y = nodes[edgeNode1[iEdge]].x - nodes[edgeNode2[iEdge]].x;
-			edgeL[iEdge] = sqrt(edgeNormal[iEdge].x*edgeNormal[iEdge].x + edgeNormal[iEdge].y*edgeNormal[iEdge].y);
+			edgeL[iEdge] = sqrt(edgeNormal[iEdge].x * edgeNormal[iEdge].x + edgeNormal[iEdge].y * edgeNormal[iEdge].y);
 			edgeNormal[iEdge].x /= edgeL[iEdge];
 			edgeNormal[iEdge].y /= edgeL[iEdge];
 			cellAddNeigh(edgeCell1[iEdge], edgeCell2[iEdge]);
@@ -494,7 +508,7 @@ void initGrid()
 			edgeCell2[iEdge] = (i == 0) ? -1 : iCell - 1;
 			edgeNormal[iEdge].x = nodes[edgeNode2[iEdge]].y - nodes[edgeNode1[iEdge]].y;
 			edgeNormal[iEdge].y = nodes[edgeNode1[iEdge]].x - nodes[edgeNode2[iEdge]].x;
-			edgeL[iEdge] = sqrt(edgeNormal[iEdge].x*edgeNormal[iEdge].x + edgeNormal[iEdge].y*edgeNormal[iEdge].y);
+			edgeL[iEdge] = sqrt(edgeNormal[iEdge].x * edgeNormal[iEdge].x + edgeNormal[iEdge].y * edgeNormal[iEdge].y);
 			edgeNormal[iEdge].x /= edgeL[iEdge];
 			edgeNormal[iEdge].y /= edgeL[iEdge];
 			cellAddNeigh(edgeCell1[iEdge], edgeCell2[iEdge]);
@@ -511,14 +525,14 @@ void initGrid()
 
 			iCell++;
 
-			cellNodes[iCell][0] = i + 1 + (NX + 1)*j;
-			cellNodes[iCell][1] = i + 1 + (NX + 1)*(j + 1);
-			cellNodes[iCell][2] = i + (NX + 1)*(j + 1);
+			cellNodes[iCell][0] = i + 1 + (NX + 1) * j;
+			cellNodes[iCell][1] = i + 1 + (NX + 1) * (j + 1);
+			cellNodes[iCell][2] = i + (NX + 1) * (j + 1);
 
 			cellCx[iCell] = (nodes[cellNodes[iCell][0]].x + nodes[cellNodes[iCell][1]].x + nodes[cellNodes[iCell][2]].x) / 3.0;
 			cellCy[iCell] = (nodes[cellNodes[iCell][0]].y + nodes[cellNodes[iCell][1]].y + nodes[cellNodes[iCell][2]].y) / 3.0;
-			cellS[iCell] = abs((nodes[cellNodes[iCell][0]].x - nodes[cellNodes[iCell][2]].x)*(nodes[cellNodes[iCell][1]].y - nodes[cellNodes[iCell][2]].y)
-				- (nodes[cellNodes[iCell][1]].x - nodes[cellNodes[iCell][2]].x)*(nodes[cellNodes[iCell][0]].y - nodes[cellNodes[iCell][2]].y));
+			cellS[iCell] = abs((nodes[cellNodes[iCell][0]].x - nodes[cellNodes[iCell][2]].x) * (nodes[cellNodes[iCell][1]].y - nodes[cellNodes[iCell][2]].y)
+				- (nodes[cellNodes[iCell][1]].x - nodes[cellNodes[iCell][2]].x) * (nodes[cellNodes[iCell][0]].y - nodes[cellNodes[iCell][2]].y));
 			iCell++;
 		}
 		iCell--;
@@ -530,7 +544,7 @@ void initGrid()
 		edgeCell2[iEdge] = -1;
 		edgeNormal[iEdge].x = nodes[edgeNode2[iEdge]].y - nodes[edgeNode1[iEdge]].y;
 		edgeNormal[iEdge].y = nodes[edgeNode1[iEdge]].x - nodes[edgeNode2[iEdge]].x;
-		edgeL[iEdge] = sqrt(edgeNormal[iEdge].x*edgeNormal[iEdge].x + edgeNormal[iEdge].y*edgeNormal[iEdge].y);
+		edgeL[iEdge] = sqrt(edgeNormal[iEdge].x * edgeNormal[iEdge].x + edgeNormal[iEdge].y * edgeNormal[iEdge].y);
 		edgeNormal[iEdge].x /= edgeL[iEdge];
 		edgeNormal[iEdge].y /= edgeL[iEdge];
 		cellAddNeigh(edgeCell1[iEdge], edgeCell2[iEdge]);
@@ -552,7 +566,7 @@ void initGrid()
 		edgeCell2[iEdge] = -1;
 		edgeNormal[iEdge].x = nodes[edgeNode2[iEdge]].y - nodes[edgeNode1[iEdge]].y;
 		edgeNormal[iEdge].y = nodes[edgeNode1[iEdge]].x - nodes[edgeNode2[iEdge]].x;
-		edgeL[iEdge] = sqrt(edgeNormal[iEdge].x*edgeNormal[iEdge].x + edgeNormal[iEdge].y*edgeNormal[iEdge].y);
+		edgeL[iEdge] = sqrt(edgeNormal[iEdge].x * edgeNormal[iEdge].x + edgeNormal[iEdge].y * edgeNormal[iEdge].y);
 		edgeNormal[iEdge].x /= edgeL[iEdge];
 		edgeNormal[iEdge].y /= edgeL[iEdge];
 		cellAddNeigh(edgeCell1[iEdge], edgeCell2[iEdge]);
@@ -575,7 +589,7 @@ void initGrid()
 		cellDXy[i] = max(max(nodes[cellNodes[i][0]].y, nodes[cellNodes[i][1]].y), nodes[cellNodes[i][2]].y) - min(min(nodes[cellNodes[i][0]].y, nodes[cellNodes[i][1]].y), nodes[cellNodes[i][2]].y);
 	}
 
-	FILE * fp = fopen("grid.gnuplot.txt", "w");
+	FILE* fp = fopen("grid.gnuplot.txt", "w");
 
 	for (int i = 0; i < cellsCount; i++)
 	{
@@ -593,7 +607,7 @@ void cellAddNeigh(int c1, int c2)
 {
 	if (c1 < 0 || c2 < 0) return;
 
-	int * neigh = cellNeigh[c1];
+	int* neigh = cellNeigh[c1];
 	if ((neigh[0] != c2) && (neigh[1] != c2) && (neigh[2] != c2))
 	{
 		int i = 0;
@@ -633,7 +647,7 @@ int __findEdge(int n1, int n2)
 void loadGrid(char* fName)
 {
 	char str[50];
-	FILE *fp;
+	FILE* fp;
 	int tmp;
 
 	// читаем данные об ”«Ћј’
@@ -653,14 +667,14 @@ void loadGrid(char* fName)
 	sprintf(str, "%s.ele", fName);
 	fp = fopen(str, "r");
 	fscanf(fp, "%d %d %d", &cellsCount, &tmp, &tmp);
-	cellNodes = new int*[cellsCount];
-	cellNeigh = new int*[cellsCount];
-	cellEdges = new int*[cellsCount];
+	cellNodes = new int* [cellsCount];
+	cellNeigh = new int* [cellsCount];
+	cellEdges = new int* [cellsCount];
 	cellS = new float[cellsCount];
 	//cellC = new Point[cellsCount];
 	cellCx = new float[cellsCount];
 	cellCy = new float[cellsCount];
-	
+
 	cellCz = new float[cellsCount];
 
 	//cellDX = new Vector[cellsCount];
@@ -741,7 +755,7 @@ void loadGrid(char* fName)
 	edgeC = new Point[edgesCount];
 
 	int iEdge = 0;
-	int * cfi = new int[cellsCount];
+	int* cfi = new int[cellsCount];
 	for (int i = 0; i < cellsCount; i++)
 	{
 		cfi[i] = 0;
@@ -760,7 +774,7 @@ void loadGrid(char* fName)
 				edgeC[iEdge].y = (nodes[edgeNode1[iEdge]].y + nodes[edgeNode2[iEdge]].y) / 2.0;
 				edgeNormal[iEdge].x = nodes[edgeNode2[iEdge]].y - nodes[edgeNode1[iEdge]].y;
 				edgeNormal[iEdge].y = nodes[edgeNode1[iEdge]].x - nodes[edgeNode2[iEdge]].x;
-				edgeL[iEdge] = sqrt(edgeNormal[iEdge].x*edgeNormal[iEdge].x + edgeNormal[iEdge].y*edgeNormal[iEdge].y);
+				edgeL[iEdge] = sqrt(edgeNormal[iEdge].x * edgeNormal[iEdge].x + edgeNormal[iEdge].y * edgeNormal[iEdge].y);
 				edgeNormal[iEdge].x /= edgeL[iEdge];
 				edgeNormal[iEdge].y /= edgeL[iEdge];
 				edgeCell1[iEdge] = i;
@@ -811,7 +825,7 @@ void loadGrid(char* fName)
 		float b = edgeL[cellEdges[i][1]];
 		float c = edgeL[cellEdges[i][2]];
 		float p = (a + b + c) / 2.0;
-		cellS[i] = sqrt(p*(p - a)*(p - b)*(p - c));
+		cellS[i] = sqrt(p * (p - a) * (p - b) * (p - c));
 		//cellDX[i].x = edgeL[cellEdges[i][0]] * edgeL[cellEdges[i][1]] * edgeL[cellEdges[i][2]] / (4.0*cellS[i]);
 		//cellDX[i].y = cellDX[i].xx;
 	}
@@ -1003,7 +1017,6 @@ void initData()
 	{
 	printf("%f   ", matrA[i * matrixDim + j]);
 	}
-
 	printf("\n\n");
 	}*/
 
@@ -1038,13 +1051,13 @@ float baseF(int fNum, int iCell, float x, float y)
 		return (y - cellCy[iCell]) / cellDXy[iCell];
 		break;
 	case 3:
-		return (x - cellCx[iCell])*(x - cellCx[iCell]) / cellDXx[iCell] / cellDXx[iCell];
+		return (x - cellCx[iCell]) * (x - cellCx[iCell]) / cellDXx[iCell] / cellDXx[iCell];
 		break;
 	case 4:
-		return (y - cellCy[iCell])*(y - cellCy[iCell]) / cellDXy[iCell] / cellDXy[iCell];
+		return (y - cellCy[iCell]) * (y - cellCy[iCell]) / cellDXy[iCell] / cellDXy[iCell];
 		break;
 	case 5:
-		return (x - cellCx[iCell])*(y - cellCy[iCell]) / cellDXx[iCell] / cellDXy[iCell];
+		return (x - cellCx[iCell]) * (y - cellCy[iCell]) / cellDXx[iCell] / cellDXy[iCell];
 		break;
 	default:
 		OutPut("ERROR! Wrong number of basic function.\n");
@@ -1134,8 +1147,8 @@ void calcCellGP(int iCell)	//Сделал для 3ёх точек.
 	//cellGP[iCell * cellGPCount + 0].x = a1*a + b1*a + c1;
 	//cellGP[iCell * cellGPCount + 0].y = a2*a + b2*a + c2;
 
-	cellGPx[iCell * cellGPCount + 0] = a1*a + b1*a + c1;
-	cellGPy[iCell * cellGPCount + 0] = a2*a + b2*a + c2;
+	cellGPx[iCell * cellGPCount + 0] = a1 * a + b1 * a + c1;
+	cellGPy[iCell * cellGPCount + 0] = a2 * a + b2 * a + c2;
 
 	cellWGP[1] = 1.0 / 6.0;
 	//cellGP[iCell][1].x = a1*a + b1*b + c1;
@@ -1143,8 +1156,8 @@ void calcCellGP(int iCell)	//Сделал для 3ёх точек.
 	//cellGP[iCell * cellGPCount + 1].x = a1*a + b1*b + c1;
 	//cellGP[iCell * cellGPCount + 1].y = a2*a + b2*b + c2;
 
-	cellGPx[iCell * cellGPCount + 1] = a1*a + b1*b + c1;
-	cellGPy[iCell * cellGPCount + 1] = a2*a + b2*b + c2;
+	cellGPx[iCell * cellGPCount + 1] = a1 * a + b1 * b + c1;
+	cellGPy[iCell * cellGPCount + 1] = a2 * a + b2 * b + c2;
 
 	cellWGP[2] = 1.0 / 6.0;
 	//cellGP[iCell][2].x = a1*b + b1*a + c1;
@@ -1152,10 +1165,10 @@ void calcCellGP(int iCell)	//Сделал для 3ёх точек.
 	//cellGP[iCell * cellGPCount + 2].x = a1*b + b1*a + c1;
 	//cellGP[iCell * cellGPCount + 2].y = a2*b + b2*a + c2;
 
-	cellGPx[iCell * cellGPCount + 2] = a1*b + b1*a + c1;
-	cellGPy[iCell * cellGPCount + 2] = a2*b + b2*a + c2;
+	cellGPx[iCell * cellGPCount + 2] = a1 * b + b1 * a + c1;
+	cellGPy[iCell * cellGPCount + 2] = a2 * b + b2 * a + c2;
 
-	cellJ[iCell] = a1*b2 - a2*b1;
+	cellJ[iCell] = a1 * b2 - a2 * b1;
 }
 
 void calcEdgeGP(int iEdge)	//Ñäåëàë äëÿ 2óõ òî÷åê.
@@ -1168,14 +1181,14 @@ void calcEdgeGP(int iEdge)	//Ñäåëàë äëÿ 2óõ òî÷åê.
 	float y2 = nodes[edgeNode2[iEdge]].y;
 
 	edgeWGP[0] = 1.0;
-	edgeGP[iEdge][0].x = (x1 + x2) / 2.0 + gp1*(x2 - x1) / 2.0;
-	edgeGP[iEdge][0].y = (y1 + y2) / 2.0 + gp1*(y2 - y1) / 2.0;
+	edgeGP[iEdge][0].x = (x1 + x2) / 2.0 + gp1 * (x2 - x1) / 2.0;
+	edgeGP[iEdge][0].y = (y1 + y2) / 2.0 + gp1 * (y2 - y1) / 2.0;
 
 	edgeWGP[1] = 1.0;
-	edgeGP[iEdge][1].x = (x1 + x2) / 2.0 + gp2*(x2 - x1) / 2.0;
-	edgeGP[iEdge][1].y = (y1 + y2) / 2.0 + gp2*(y2 - y1) / 2.0;
+	edgeGP[iEdge][1].x = (x1 + x2) / 2.0 + gp2 * (x2 - x1) / 2.0;
+	edgeGP[iEdge][1].y = (y1 + y2) / 2.0 + gp2 * (y2 - y1) / 2.0;
 
-	edgeJ[iEdge] = sqrt(pow_2(x2 - x1) + pow_2(y2 - y1))*0.5;
+	edgeJ[iEdge] = sqrt(pow_2(x2 - x1) + pow_2(y2 - y1)) * 0.5;
 }
 
 // **************************************************************************************************************************************************
@@ -1431,7 +1444,7 @@ void calcIntegralSurf()	// —читаем поверхностный интег
 // **************************************************************************************************************************************************
 
 // ************************************************* Работа с матрицой весов ************************************************************************
-void getMatrixInCell(int icell, float *A)
+void getMatrixInCell(int icell, float* A)
 {
 	int matrixDim = cellsCount * funcCount;
 
@@ -1452,7 +1465,7 @@ void getMatrixInCell(int icell, float *A)
 	}
 }
 
-void getInvMatrixInCell(int icell, float *invA)
+void getInvMatrixInCell(int icell, float* invA)
 {
 	int matrixDim = cellsCount * funcCount;
 
@@ -1473,7 +1486,7 @@ void getInvMatrixInCell(int icell, float *invA)
 	}
 }
 
-void setMatrixInCell(int icell, float *A)
+void setMatrixInCell(int icell, float* A)
 {
 	int matrixDim = cellsCount * funcCount;
 
@@ -1494,7 +1507,7 @@ void setMatrixInCell(int icell, float *A)
 	}
 }
 
-void setInvMatrixInCell(int icell, float *invA)
+void setInvMatrixInCell(int icell, float* invA)
 {
 	int matrixDim = cellsCount * funcCount;
 
@@ -1534,7 +1547,7 @@ void calcMatr(int iCell)
 			{
 				//A[i][j] += cellWGP[iGP] * baseF(i, iCell, cellGP[iCell][iGP].x, cellGP[iCell][iGP].y)*baseF(j, iCell, cellGP[iCell][iGP].x, cellGP[iCell][iGP].y);
 				//A[i][j] += cellWGP[iGP] * baseF(i, iCell, cellGP[iCell * cellGPCount + iGP].x, cellGP[iCell * cellGPCount + iGP].y)*baseF(j, iCell, cellGP[iCell * cellGPCount + iGP].x, cellGP[iCell * cellGPCount + iGP].y);
-				cellA[i * N + j] += cellWGP[iGP] * baseF(i, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP])*baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+				cellA[i * N + j] += cellWGP[iGP] * baseF(i, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
 			}
 			cellA[i * N + j] *= cellJ[iCell];
 		}
@@ -1547,9 +1560,9 @@ void calcMatr(int iCell)
 	setInvMatrixInCell(iCell, cellInvA);
 }
 
-void inverseMatr__(float** a_src, float **am, int N)
+void inverseMatr__(float** a_src, float** am, int N)
 {
-	float **a = a_src;
+	float** a = a_src;
 	float detA = a[0][0] * a[1][1] * a[2][2] + a[1][0] * a[2][1] * a[0][2] + a[0][1] * a[1][2] * a[2][0]
 		- a[2][0] * a[1][1] * a[0][2] - a[1][0] * a[0][1] * a[2][2] - a[0][0] * a[2][1] * a[1][2];
 	//OutPut("detA = %25.16e\n", detA);
@@ -1575,19 +1588,19 @@ void inverseMatr__(float** a_src, float **am, int N)
 	am[2][2] = m[2][2] / detA;
 }
 
-void inverseMatr(float* a_src, float *am, int N)
+void inverseMatr(float* a_src, float* am, int N)
 {
-	int	*	mask;
+	int* mask;
 	float	fmaxval;
 	int		maxind;
 	int		tmpi;
 	float	tmp;
 	//float	a[N][N];
 
-	float	**a;
+	float** a;
 
 	mask = new int[N];
-	a = new float*[N];
+	a = new float* [N];
 	for (int i = 0; i < N; i++)
 	{
 		a[i] = new float[N];
@@ -1662,7 +1675,7 @@ void inverseMatr(float* a_src, float *am, int N)
 				float fconst = a[ni][i];
 				for (int nj = 0; nj < N; nj++)
 				{
-					a[ni][nj] = a[ni][nj] - fconst *  a[i][nj];
+					a[ni][nj] = a[ni][nj] - fconst * a[i][nj];
 					am[ni * N + nj] = am[ni * N + nj] - fconst * am[i * N + nj];
 				}
 			}
@@ -1715,7 +1728,7 @@ void getFlux(float& FU, float& FWx, float& FWy,
 
 void getFields(float& U, float& Wx, float& Wy, int iCell, float x, float y, DATA_LAYER layer) // // Ïî èíäåêñó êàæäîé ÿ÷åéêè ïîëó÷àåì çíà÷åíèå U, Wx, Wy
 {
-	float *fieldU, *fieldWx, *fieldWy;
+	float* fieldU, * fieldWx, * fieldWy;
 	fieldU = (float*)malloc(funcCount * sizeof(float));
 	fieldWx = (float*)malloc(funcCount * sizeof(float));
 	fieldWy = (float*)malloc(funcCount * sizeof(float));
@@ -1767,24 +1780,21 @@ void getFields(float& U, float& Wx, float& Wy, int iCell, float x, float y, DATA
 // ******************************************* Непосредственно вычисление значений ******************************************************************
 void calcNewGradientValues()
 {
-	float *aWx, *aWy;
+	float* aWx, * aWy;
 	aWx = (float*)malloc(sizeof(float) * cellsCount * funcCount);
 	aWy = (float*)malloc(sizeof(float) * cellsCount * funcCount);
 
 	/*cublasGradMatrixMult(aWx, aWy);
-
 	for (int iCell = 0; iCell < cellsCount; iCell++)
 	{
 		for (int j = 0; j < funcCount; j++)
 		{
 			fWx[iCell * funcCount + j] += TAU * aWx[iCell * funcCount + j];
 			fWy[iCell * funcCount + j] += TAU * aWy[iCell * funcCount + j];
-
 			if (abs(fWx[iCell * funcCount + j]) <= EPS) fWx[iCell * funcCount + j] = 0.0;
 			if (abs(fWy[iCell * funcCount + j]) <= EPS) fWy[iCell * funcCount + j] = 0.0;
 		}
 	}
-
 	free(aWx);
 	free(aWy);*/
 
@@ -1793,8 +1803,8 @@ void calcNewGradientValues()
 		//float * A = matrInvA[iCell];
 		getInvMatrixInCell(iCell, cellInvA);
 
-		memset(aWx, 0, sizeof(float)*funcCount);
-		memset(aWy, 0, sizeof(float)*funcCount);
+		memset(aWx, 0, sizeof(float) * funcCount);
+		memset(aWy, 0, sizeof(float) * funcCount);
 
 		for (int j = 0; j < funcCount; j++)
 		{
@@ -1823,7 +1833,7 @@ void calcNewGradientValues()
 
 void calcNewValues()
 {
-	float *aU;
+	float* aU;
 	aU = (float*)malloc(sizeof(float) * funcCount);
 
 	for (int iCell = 0; iCell < cellsCount; iCell++)
@@ -1856,15 +1866,12 @@ void calcNewValues()
 
 	/*float *aU;
 	aU = (float*)malloc(sizeof(float) * cellsCount * funcCount);
-
 	cublasMatrixMult(aU);
-
 	for (int iCell = 0; iCell < cellsCount; iCell++)
 	{
 		for (int j = 0; j < funcCount; j++)
 		{
 			fU[iCell * funcCount + j] += TAU * aU[iCell * funcCount + j];
-
 			if (abs(fU[iCell * funcCount + j]) <= EPS)
 			{
 				fU[iCell * funcCount + j] = 0.0;
@@ -2053,82 +2060,82 @@ void destroyGrid()
 // ***************************************************** Вывод в файлы ******************************************************************************
 void writeVTK_AMGX(char* name, int step, float* currentLayerSolution)
 {
-    char fName[50];
-    FILE * fp;
-    sprintf(fName, "%s.%010d.vtk", name, step);
-    fp = fopen(fName, "w");
-    fprintf(fp, "");
-    fprintf(fp, "# vtk DataFile Version 2.0\n");
-    fprintf(fp, "2D RKDG method for task '%s' results.\n", name);
-    fprintf(fp, "ASCII\n");
-    fprintf(fp, "DATASET UNSTRUCTURED_GRID\n");
+	char fName[50];
+	FILE* fp;
+	sprintf(fName, "%s.%010d.vtk", name, step);
+	fp = fopen(fName, "w");
+	fprintf(fp, "");
+	fprintf(fp, "# vtk DataFile Version 2.0\n");
+	fprintf(fp, "2D RKDG method for task '%s' results.\n", name);
+	fprintf(fp, "ASCII\n");
+	fprintf(fp, "DATASET UNSTRUCTURED_GRID\n");
 
-    fprintf(fp, "POINTS %d float\n", nodesCount);
-    for (int i = 0; i < nodesCount; i++)
-    {
-        fprintf(fp, "%f %f %f  \n", nodes[i].x, nodes[i].y, 0.0);
-    }
+	fprintf(fp, "POINTS %d float\n", nodesCount);
+	for (int i = 0; i < nodesCount; i++)
+	{
+		fprintf(fp, "%f %f %f  \n", nodes[i].x, nodes[i].y, 0.0);
+	}
 
-    fprintf(fp, "\n");
+	fprintf(fp, "\n");
 
-    fprintf(fp, "CELLS %d %d\n", cellsCount, 4 * cellsCount);
-    for (int i = 0; i < cellsCount; i++)
-    {
-        fprintf(fp, "3 %d %d %d  \n", cellNodes[i][0], cellNodes[i][1], cellNodes[i][2]);
-    }
+	fprintf(fp, "CELLS %d %d\n", cellsCount, 4 * cellsCount);
+	for (int i = 0; i < cellsCount; i++)
+	{
+		fprintf(fp, "3 %d %d %d  \n", cellNodes[i][0], cellNodes[i][1], cellNodes[i][2]);
+	}
 
-    fprintf(fp, "\n");
+	fprintf(fp, "\n");
 
-    fprintf(fp, "CELL_TYPES %d\n", cellsCount);
+	fprintf(fp, "CELL_TYPES %d\n", cellsCount);
 
-    for (int i = 0; i < cellsCount; i++) fprintf(fp, "5\n");
+	for (int i = 0; i < cellsCount; i++) fprintf(fp, "5\n");
 
-    fprintf(fp, "\n");
+	fprintf(fp, "\n");
 
-    fprintf(fp, "CELL_DATA %d\n", cellsCount);
+	fprintf(fp, "CELL_DATA %d\n", cellsCount);
 
-    fprintf(fp, "SCALARS Temperature float 1\nLOOKUP_TABLE default\n");
-    for (int i = 0; i < cellsCount; i++)
-    {
-        fprintf(fp, "%f ", currentLayerSolution[i * A_block_size + 6]);
-        if ((i + 1) % 8 == 0 || i + 1 == cellsCount) fprintf(fp, "\n");
-    }
+	fprintf(fp, "SCALARS Temperature float 1\nLOOKUP_TABLE default\n");
+	for (int i = 0; i < cellsCount; i++)
+	{
+		fprintf(fp, "%f ", currentLayerSolution[i * A_block_size + 6]);
+		if ((i + 1) % 8 == 0 || i + 1 == cellsCount) fprintf(fp, "\n");
+	}
 
-    ////fprintf(fp, "SCALARS Pressure float 1\nLOOKUP_TABLE default\n");
-    //for (int i = 0; i < cellsCount; i++)
-    //{
-    //	fprintf(fp, "%f ", wx[i]);
-    //	if ((i + 1) % 8 == 0 || i + 1 == cellsCount) fprintf(fp, "\n");
-    //}
+	////fprintf(fp, "SCALARS Pressure float 1\nLOOKUP_TABLE default\n");
+	//for (int i = 0; i < cellsCount; i++)
+	//{
+	//	fprintf(fp, "%f ", wx[i]);
+	//	if ((i + 1) % 8 == 0 || i + 1 == cellsCount) fprintf(fp, "\n");
+	//}
 
-    /*fprintf(fp, "SCALARS Energy float 1\nLOOKUP_TABLE default\n");
-    for (int i = 0; i < cellsCount; i++)
-    {
-    fprintf(fp, "%f ", wy[i]);
-    if ((i + 1) % 8 == 0 || i + 1 == cellsCount) fprintf(fp, "\n");
-    }*/
+	/*fprintf(fp, "SCALARS Energy float 1\nLOOKUP_TABLE default\n");
+	for (int i = 0; i < cellsCount; i++)
+	{
+	fprintf(fp, "%f ", wy[i]);
+	if ((i + 1) % 8 == 0 || i + 1 == cellsCount) fprintf(fp, "\n");
+	}*/
 
-    /*fprintf(fp, "SCALARS Mach_number float 1\nLOOKUP_TABLE default\n");
-    for (int i = 0; i < cellsCount; i++)
-    {
-    fprintf(fp, "%f ", sqrt((u[i] * u[i] + v[i] * v[i]) / (GAM*p[i] / r[i])));
-    if ((i + 1) % 8 == 0 || i + 1 == cellsCount) fprintf(fp, "\n");
-    }*/
+	/*fprintf(fp, "SCALARS Mach_number float 1\nLOOKUP_TABLE default\n");
+	for (int i = 0; i < cellsCount; i++)
+	{
+	fprintf(fp, "%f ", sqrt((u[i] * u[i] + v[i] * v[i]) / (GAM*p[i] / r[i])));
+	if ((i + 1) % 8 == 0 || i + 1 == cellsCount) fprintf(fp, "\n");
+	}*/
 
-    /*fprintf(fp, "VECTORS Velosity float\n");
-    for (int i = 0; i < cellsCount; i++)
-    {
-    fprintf(fp, "%f %f %f  ", u[i], v[i], 0.0);
-    if ((i + 1) % 8 == 0 || i + 1 == cellsCount) fprintf(fp, "\n");
-    }*/
+	/*fprintf(fp, "VECTORS Velosity float\n");
+	for (int i = 0; i < cellsCount; i++)
+	{
+	fprintf(fp, "%f %f %f  ", u[i], v[i], 0.0);
+	if ((i + 1) % 8 == 0 || i + 1 == cellsCount) fprintf(fp, "\n");
+	}*/
 
-    fclose(fp);
+	fclose(fp);
 }
 
 void writeVTK(char* name, int step)
 {
 	char fName[50];
-	FILE * fp;
+	FILE* fp;
 	sprintf(fName, "%s.%010d.vtk", name, step);
 	fp = fopen(fName, "w");
 	fprintf(fp, "");
@@ -2198,7 +2205,7 @@ void writeVTK(char* name, int step)
 void save(int step)
 {
 	char fName[50];
-	FILE * fp;
+	FILE* fp;
 
 	sprintf(fName, "res_%010d.gnuplot.txt", step);
 	fp = fopen(fName, "w");
@@ -2206,8 +2213,8 @@ void save(int step)
 	{
 		for (int j = 0; j < 100; j++)
 		{
-			float	x = 3.0*i / 300;
-			float	y = 1.0*j / 100;
+			float	x = 3.0 * i / 300;
+			float	y = 1.0 * j / 100;
 			if (x > 0.6 && y < 0.2)
 			{
 				fprintf(fp, "%16.8e %16.8e %16.8e %16.8e %16.8e %16.8e %16.8e\n", x, y, 0.0, 0.0, 0.0, 0.0, 0.0);
@@ -2218,8 +2225,8 @@ void save(int step)
 				int		minI = 0;
 				for (int iC = 0; iC < cellsCount; iC++)
 				{
-					float &ptx = cellCx[iC];
-					float &pty = cellCy[iC];
+					float& ptx = cellCx[iC];
+					float& pty = cellCy[iC];
 
 					float L = sqrt(pow_2(x - ptx) + pow_2(y - pty));
 					if (L < minL)
@@ -2273,45 +2280,45 @@ float GetUBoundary(int iCell, int iCoeff)
 {
 	switch (iCoeff)
 	{
-		case 0:
-			return 0.0;
-        case 1:
-            return 0.0;
-	    case 2:
-	        return 0.0;
-		default:
-			return 0.0;
+	case 0:
+		return 0.0;
+	case 1:
+		return 0.0;
+	case 2:
+		return 0.0;
+	default:
+		return 0.0;
 	}
 }
 
 float GetQxBoundary(int iCell, int iCoeff)
 {
-    switch (iCoeff)
-    {
-        case 0:
-            return 0.0;
-        case 1:
-            return 0.0;
-        case 2:
-            return 0.0;
-        default:
-            return 0.0;
-    }
+	switch (iCoeff)
+	{
+	case 0:
+		return 0.0;
+	case 1:
+		return 0.0;
+	case 2:
+		return 0.0;
+	default:
+		return 0.0;
+	}
 }
 
 float GetQyBoundary(int iCell, int iCoeff)
 {
-    switch (iCoeff)
-    {
-        case 0:
-            return 0.0;
-        case 1:
-            return 0.0;
-        case 2:
-            return 0.0;
-        default:
-            return 0.0;
-    }
+	switch (iCoeff)
+	{
+	case 0:
+		return 0.0;
+	case 1:
+		return 0.0;
+	case 2:
+		return 0.0;
+	default:
+		return 0.0;
+	}
 }
 
 void initRightPart(float* lastLayerSolution, float* rightPart_data)
@@ -2324,6 +2331,13 @@ void initRightPart(float* lastLayerSolution, float* rightPart_data)
 	int iSmallBlockId = 0;
 
 	A_size = A_block_size * cellsCount;
+
+	FILE* fp = fopen("right_part.txt", "w");
+
+	for (int i = 0; i < A_size; i++)
+	{
+		fprintf(fp, "%f\n", rightPart_data[i]);
+	}
 
 	for (int i = 0; i < A_size; i++) {
 
@@ -2356,9 +2370,9 @@ void initRightPart(float* lastLayerSolution, float* rightPart_data)
 
 					float cGP1 = edgeWGP[iGP] * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
 
-					tmpInt += cellWGP[iGP] * baseF(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
-						+ TAU*TAU*cellWGP[iGP] * (bfDFDx + bfDFDy) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP])
-						- TAU*TAU*((edgeNormal[i].x * cGP1) - (edgeNormal[i].y * cGP1));
+					tmpInt += cellWGP[iGP] * baseF(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP])
+						+ TAU * cellWGP[iGP] * (bfDFDx + bfDFDy);
+						- TAU * ((edgeNormal[i].x * cGP1) + (edgeNormal[i].y * cGP1));
 				}
 
 				tmpInt *= (cellJ[iCell] * lastLayerSolution[iRowU]);
@@ -2446,7 +2460,7 @@ void initMatrix(CSRMatrix& A)
 
 				tmpInt = tmpInt * cellJ[iCell];
 
-				A.add(i, colId + j, tmpInt);
+				A.add(i, colId + j + 6, tmpInt);
 			}
 		}
 		// calculate vol integral values for qy-block
@@ -2467,7 +2481,7 @@ void initMatrix(CSRMatrix& A)
 
 				tmpInt = tmpInt * cellJ[iCell];
 
-				A.add(i, colId + j, tmpInt);
+				A.add(i, colId + j + 3, tmpInt);
 			}
 		}
 		// calculate vol integral values for u-block
@@ -2480,28 +2494,42 @@ void initMatrix(CSRMatrix& A)
 				for (int iGP = 0; iGP < cellGPCount; iGP++)
 				{
 					float bfDFDx = baseDFDx(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
-					float bfDFDy = baseDFDy(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
 
-					tmpInt += cellWGP[iGP] * (bfDFDx + bfDFDy) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+					tmpInt += cellWGP[iGP] * (bfDFDx) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
 				}
 
 				if (abs(tmpInt) <= EPS) tmpInt = 0.0;
 
 				tmpInt = tmpInt * cellJ[iCell];
 
-				A.add(i, colId + j, tmpInt);
+				A.add(i, (colId - 6 + j), tmpInt);
+
+				float tmpInt2 = 0.0;
+
+				for (int iGP = 0; iGP < cellGPCount; iGP++)
+				{
+					float bfDFDy = baseDFDy(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+
+					tmpInt2 += cellWGP[iGP] * (bfDFDy) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+				}
+
+				if (abs(tmpInt2) <= EPS) tmpInt2 = 0.0;
+
+				tmpInt2 = tmpInt2 * cellJ[iCell];
+
+				A.add(i, (colId - 3 + j), tmpInt2);
 			}
 		}
 	}
-	/*
+	
 	// calculate surf integral
 	int c1, c2;
 	bool isBoundary = false;
 	for (int i = 0; i < edgesCount; i++)
-	{ 
+	{
 		c1 = edgeCell1[i];
 		c2 = edgeCell2[i];
-		if (c2 >= 0) { 
+		if (c2 >= 0) {
 			isBoundary = false;
 			int iRowU1 = c1 * A_block_size + 6;
 			int iRowU2 = c2 * A_block_size + 6;
@@ -2509,14 +2537,12 @@ void initMatrix(CSRMatrix& A)
 			int iRowQy2 = c2 * A_block_size + 3;
 			int iRowQx1 = c1 * A_block_size;
 			int iRowQx2 = c2 * A_block_size;
-
 			int iColU1 = c1 * A_block_size + uBlock * A_small_block_size;
 			int iColU2 = c2 * A_block_size + uBlock * A_small_block_size;
 			int iColQy1 = c1 * A_block_size + qyBlock * A_small_block_size;
 			int iColQy2 = c2 * A_block_size + qyBlock * A_small_block_size;
 			int iColQx1 = c1 * A_block_size + qxBlock * A_small_block_size;
 			int iColQx2 = c2 * A_block_size + qxBlock * A_small_block_size;
-
 			for (int m = 0; m < funcCount; m++)
 			{
 				for (int j = 0; j < A_small_block_size; j++)
@@ -2527,86 +2553,81 @@ void initMatrix(CSRMatrix& A)
 					int iRowQx2Current = iRowQx2 + m;
 					int iRowQy1Current = iRowQy1 + m;
 					int iRowQy2Current = iRowQy2 + m;
-
 					float tmpIntU1 = 0.0, tmpIntQx1 = 0.0, tmpIntQy1 = 0.0;
 					float tmpIntU2 = 0.0, tmpIntQx2 = 0.0, tmpIntQy2 = 0.0;
-
 					for (int iGP = 0; iGP < edgeGPCount; iGP++)
 					{
 						float cGP1 = edgeWGP[iGP] * baseF(m, c1, edgeGP[i][iGP].x, edgeGP[i][iGP].y) * baseF(j, c1, edgeGP[i][iGP].x, edgeGP[i][iGP].y);
 						float cGP2 = edgeWGP[iGP] * baseF(m, c2, edgeGP[i][iGP].x, edgeGP[i][iGP].y) * baseF(j, c2, edgeGP[i][iGP].x, edgeGP[i][iGP].y);
-
 						tmpIntU1 += (edgeNormal[i].x * cGP1) + (edgeNormal[i].y * cGP1);
 						tmpIntU2 += (edgeNormal[i].x * cGP2) + (edgeNormal[i].y * cGP2);
-
 						tmpIntQx1 += edgeNormal[i].x * cGP1;
 						tmpIntQx2 += edgeNormal[i].x * cGP2;
-
 						tmpIntQy1 += edgeNormal[i].y * cGP1;
 						tmpIntQy2 += edgeNormal[i].y * cGP2;
 					}
-
-					if (abs(tmpIntU1) <= EPS) tmpIntU1 = 0.0;
-
 					// for u
+					if (abs(tmpIntU1) <= EPS) tmpIntU1 = 0.0;
 					tmpIntU1 *= edgeJ[i] * 0.5;
 					A.add(iRowU1Current, iColU1 + j, -tmpIntU1);
-
 					if (abs(tmpIntU2) <= EPS) tmpIntU2 = 0.0;
-
 					tmpIntU2 *= edgeJ[i] * 0.5;
 					A.add(iRowU2Current, iColU2 + j, -tmpIntU2);
-
 					// for qx
 					if (abs(tmpIntQx1) <= EPS) tmpIntQx1 = 0.0;
-
 					tmpIntQx1 *= edgeJ[i] * 0.5;
 					A.add(iRowQx1Current, iColQx1 + j, -tmpIntQx1);
-
 					if (abs(tmpIntQx2) <= EPS) tmpIntQx2 = 0.0;
-
 					tmpIntQx2 *= edgeJ[i] * 0.5;
 					A.add(iRowQx2Current, iColQx2 + j, -tmpIntQx2);
-
 					// for qy
 					if (abs(tmpIntQy1) <= EPS) tmpIntQy1 = 0.0;
-
 					tmpIntQy1 *= edgeJ[i] * 0.5;
 					A.add(iRowQy1Current, iColQy1 + j, -tmpIntQy1);
-
 					if (abs(tmpIntQy2) <= EPS) tmpIntQy2 = 0.0;
-
 					tmpIntQy2 *= edgeJ[i] * 0.5;
 					A.add(iRowQy2Current, iColQy2 + j, -tmpIntQy2);
 				}
 			}
 		}
-		else { 
+		else {
 			isBoundary = true;
 			int iRowU1 = c1 * A_block_size + 6;
 			int iColU1 = c1 * A_block_size + uBlock * A_small_block_size;
-
 			for (int m = 0; m < funcCount; m++)
 			{
 				for (int j = 0; j < A_small_block_size; j++)
 				{
 					int iRowU1Current = iRowU1 + m;
-
 					float tmpIntU1 = 0.0;
-
 					for (int iGP = 0; iGP < edgeGPCount; iGP++)
 					{
 						float cGP1 = edgeWGP[iGP] * baseF(m, c1, edgeGP[i][iGP].x, edgeGP[i][iGP].y) * baseF(j, c1, edgeGP[i][iGP].x, edgeGP[i][iGP].y);
-
 						tmpIntU1 += (edgeNormal[i].x * cGP1) + (edgeNormal[i].y * cGP1);
 					}
-
 					if (abs(tmpIntU1) <= EPS) tmpIntU1 = 0.0;
-
 					tmpIntU1 *= edgeJ[i] * 0.5;
 					A.add(iRowU1Current, iColU1 + j, -tmpIntU1);
 				}
 			}
-		}*/
+		}
+	}
 }
-	
+
+/*if (abs(tmpIntQx1) <= EPS) tmpIntQx1 = 0.0;
+					tmpIntQx1 *= edgeJ[i] * 0.5;
+					A.add(iRowU1Current, iColU1 + 6 + j, -tmpIntQx1);
+					A.add(iRowQx1Current, iColQx1 + 6 + j, -tmpIntQx1);
+					if (abs(tmpIntQx2) <= EPS) tmpIntQx2 = 0.0;
+					tmpIntQx2 *= edgeJ[i] * 0.5;
+					A.add(iRowU2Current, iColU2 + 6 + j, -tmpIntQx2);
+					A.add(iRowQx2Current, iColQx2 + 6 + j, -tmpIntQx2);
+					// for qy
+					if (abs(tmpIntQy1) <= EPS) tmpIntQy1 = 0.0;
+					tmpIntQy1 *= edgeJ[i] * 0.5;
+					A.add(iRowU1Current, iColU1 - 3 + j, -tmpIntQy1);
+					A.add(iRowQy1Current, iColQy1 + 3 + j, -tmpIntQy1);
+					if (abs(tmpIntQy2) <= EPS) tmpIntQy2 = 0.0;
+					tmpIntQy2 *= edgeJ[i] * 0.5;
+					A.add(iRowU1Current, iColU2 - 3 + j, -tmpIntQy2);
+					A.add(iRowQy2Current, iColQy2 + 3 + j, -tmpIntQy2);*/
