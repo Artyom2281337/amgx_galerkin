@@ -33,7 +33,7 @@ float	EPS = 1.0e-12;
 
 //	Memory for CUDA threads
 
-const float	TAU = 1.e-3;
+const float	TAU = 1.e-5;
 const float	TMAX = 20.; //0.2;
 
 const int		SAVE_STEP = 100;
@@ -44,8 +44,8 @@ const float	MM_DX = 1. / 160.;
 
 
 //! параметры сетки
-const int NX = 20;
-const int NY = 20;
+const int NX = 10;
+const int NY = 10;
 
 // число узлов(и ребер) в одной ячейке.
 const int countNodesInCell = 3; 
@@ -134,6 +134,11 @@ const int A_small_block_size = 3;
 // end
 
 void initMatrix(CSRMatrix& A);
+void init_A_without_surf(CSRMatrix& A);
+void init_A_surf(CSRMatrix& A);
+void addEdgeIntForBlock(CSRMatrix& A, int iRowU1Current, int iCurrentCol, float value, int i);
+void addEdgeIntForRightPart(float* rightPart_data, float* lastLayerSolution, int iRowU1Current, int iRowU2Current, float value, int i);
+void print_right_part(const char* fileName, float* rightPart_data);
 void loadGrid(char* fileName);	//!<	Чтение сетки из файлов.
 void initGrid();				//!<	Построение сетки.
 void destroyGrid();				//!<	Освобождение памяти, отведенной для хранения сетки.
@@ -204,9 +209,11 @@ int main()
 	float *lastLayerSolution = new float[A_block_size * cellsCount];
 	float *currentLayerSolution = new float[A_block_size * cellsCount];
 
-	memset(b_data, 0.0, sizeof(float));
-    memset(lastLayerSolution, 0.0, sizeof(float));	// check info
-	memset(currentLayerSolution, 0.0, sizeof(float));
+	for (int i = 0; i < A_block_size * cellsCount; i++) {
+		b_data[i] = 0.0;
+		lastLayerSolution[i] = 0.0;
+		currentLayerSolution[i] = 0.0;
+	}
 
 	for (int iCell = 0; iCell < cellsCount; iCell++) {
         lastLayerSolution[A_block_size * iCell + 6] = sin(cellCx[iCell] * M_PI) * sin(cellCy[iCell] * M_PI);
@@ -235,14 +242,28 @@ int main()
 
 	CSRMatrix matrix(A_block_size * cellsCount);
 
+	print_right_part("lastLayerSolution_0.txt", lastLayerSolution);
 	initRightPart(lastLayerSolution, b_data);
+	print_right_part("right_part_0.txt", b_data);
 
 	initMatrix(matrix);
 
 	matrix.printToFile("resMatrix.txt");
 
-	int n_amgx = A_block_size * cellsCount;
-	int nnz_amgx = A_small_block_size * A_small_block_size * 3 * cellsCount;
+	int nnz = 0;
+	for (int i = 0; i < cellsCount; i++) {
+		nnz++;
+		for (int j = 0; j < 3; j++) {
+			if (cellNeigh[i][j] > -1) {
+				nnz++;
+			}
+		}
+	}
+
+	//int n_amgx = A_block_size * cellsCount;
+	//int nnz_amgx = A_small_block_size * A_small_block_size * A_block_size * nnz;
+	int n_amgx = matrix.n;
+	int nnz_amgx = matrix.na;
 
     AMGX_matrix_upload_all(A_amgx, n_amgx, nnz_amgx, 1, 1, matrix.ia, matrix.ja, matrix.a, 0);
 	AMGX_vector_upload(b_amgx, n_amgx, 1, b_data);
@@ -294,7 +315,9 @@ int main()
             printf("runtime = %f", (clock() / 1000.0));
         }
 
-		memset(currentLayerSolution, 0.0, sizeof(float));
+		for (int i = 0; i < A_block_size * cellsCount; i++) {
+			currentLayerSolution[i] = 0.0;
+		}
         AMGX_vector_set_zero(solution_amgx, n_amgx, 1);
 
 		// ************ end AMGX solver ************
@@ -2327,6 +2350,9 @@ void initRightPart(float* lastLayerSolution, float* rightPart_data)
 
 	for (int i = 0; i < A_size; i++) {
 
+		int c1 = edgeCell1[i];
+		int c2 = edgeCell2[i];
+
 		if (((i % A_small_block_size) == 0) && (i != 0)) {
 			iSmallBlockId++;
 		}
@@ -2336,13 +2362,13 @@ void initRightPart(float* lastLayerSolution, float* rightPart_data)
 			iSmallBlockId = 0;
 		}
 
-		// rowId in each small block
+		// rowId in each small block - пробная функция
 		int rowId = i % A_small_block_size;
 
 		float fullInt = 0.0;
 
 		if (iSmallBlockId == uBlock) {
-			for (int j = 0; j < A_small_block_size; j++)
+			for (int j = 0; j < A_small_block_size; j++) // базисная функция
 			{
 				float tmpInt = 0.0;
 
@@ -2350,20 +2376,20 @@ void initRightPart(float* lastLayerSolution, float* rightPart_data)
 
 				for (int iGP = 0; iGP < cellGPCount; iGP++)
 				{
-
 					float bfDFDx = baseDFDx(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
 					float bfDFDy = baseDFDy(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
 
-					float cGP1 = edgeWGP[iGP] * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+					tmpInt += cellWGP[iGP] * (bfDFDx + bfDFDy) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+				}
+				tmpInt *= TAU;
 
-					tmpInt += cellWGP[iGP] * baseF(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
-						+ TAU*TAU*cellWGP[iGP] * (bfDFDx + bfDFDy) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP])
-						- TAU*TAU*((edgeNormal[i].x * cGP1) - (edgeNormal[i].y * cGP1));
+				for (int iGP = 0; iGP < cellGPCount; iGP++)
+				{
+					tmpInt += cellWGP[iGP] * baseF(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP])
+						* baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
 				}
 
 				tmpInt *= (cellJ[iCell] * lastLayerSolution[iRowU]);
-
-				tmpInt /= TAU;
 
 				fullInt += tmpInt;
 			}
@@ -2371,11 +2397,115 @@ void initRightPart(float* lastLayerSolution, float* rightPart_data)
 			rightPart_data[i] = fullInt;
 		}
 	}
+
+	int c1, c2;
+	bool isBoundary = false;
+	for (int i = 0; i < edgesCount; i++)
+	{
+		c1 = edgeCell1[i];
+		c2 = edgeCell2[i];
+		if (c2 >= 0) {
+
+			isBoundary = false;
+			int iRowU1 = c1 * A_block_size + 6;
+			int iRowU2 = c2 * A_block_size + 6;
+
+			int iColU1 = c1 * A_block_size + uBlock * A_small_block_size;
+			int iColU2 = c2 * A_block_size + uBlock * A_small_block_size;
+
+			//цикл по пробным функциям
+			for (int m = 0; m < funcCount; m++)
+			{
+				//цикл по базисным функциям
+				for (int j = 0; j < A_small_block_size; j++)
+				{
+
+					int iRowU1Current = iRowU1 + j;
+					int iRowU2Current = iRowU2 + j;
+
+					float tmpIntU1 = 0.0;
+					float tmpIntU2 = 0.0;
+
+					float tmpC1C2_x = 0.0, tmpC2C1_x = 0.0;
+					float tmpC1C2_y = 0.0, tmpC2C1_y = 0.0;
+
+					for (int iGP = 0; iGP < edgeGPCount; iGP++)
+					{
+						float cGP1_1 = edgeWGP[iGP] * baseF(m, c1, edgeGP[i][iGP].x, edgeGP[i][iGP].y) * baseF(j, c1, edgeGP[i][iGP].x, edgeGP[i][iGP].y);
+						float cGP1_2 = edgeWGP[iGP] * baseF(m, c1, edgeGP[i][iGP].x, edgeGP[i][iGP].y) * baseF(j, c2, edgeGP[i][iGP].x, edgeGP[i][iGP].y);
+						float cGP2_2 = edgeWGP[iGP] * baseF(m, c2, edgeGP[i][iGP].x, edgeGP[i][iGP].y) * baseF(j, c2, edgeGP[i][iGP].x, edgeGP[i][iGP].y);
+						float cGP2_1 = edgeWGP[iGP] * baseF(m, c2, edgeGP[i][iGP].x, edgeGP[i][iGP].y) * baseF(j, c1, edgeGP[i][iGP].x, edgeGP[i][iGP].y);
+
+						tmpC1C2_x += (edgeNormal[i].x * cGP1_1) + (edgeNormal[i].x * cGP1_2);
+						tmpC2C1_x += (edgeNormal[i].x * cGP2_2) + (edgeNormal[i].x * cGP2_1);
+						tmpC1C2_y += (edgeNormal[i].y * cGP1_1) + (edgeNormal[i].y * cGP1_2);
+						tmpC2C1_y += (edgeNormal[i].y * cGP2_2) + (edgeNormal[i].y * cGP2_1);
+					}
+
+					addEdgeIntForRightPart(rightPart_data, lastLayerSolution, iRowU1Current, iRowU2Current, -tmpC1C2_x, i);
+					addEdgeIntForRightPart(rightPart_data, lastLayerSolution, iRowU2Current, iRowU1Current, tmpC1C2_x, i);
+					addEdgeIntForRightPart(rightPart_data, lastLayerSolution, iRowU1Current, iRowU2Current, -tmpC2C1_x, i);
+					addEdgeIntForRightPart(rightPart_data, lastLayerSolution, iRowU2Current, iRowU1Current, tmpC2C1_x, i);
+					addEdgeIntForRightPart(rightPart_data, lastLayerSolution, iRowU1Current, iRowU2Current, -tmpC1C2_y, i);
+					addEdgeIntForRightPart(rightPart_data, lastLayerSolution, iRowU2Current, iRowU1Current, tmpC1C2_y, i);
+					addEdgeIntForRightPart(rightPart_data, lastLayerSolution, iRowU1Current, iRowU2Current, -tmpC2C1_y, i);
+					addEdgeIntForRightPart(rightPart_data, lastLayerSolution, iRowU2Current, iRowU1Current, tmpC2C1_y, i);
+					/*if (abs(tmpIntU1) <= EPS) tmpIntU1 = 0.0;
+
+					 for u
+					tmpIntU1 *= TAU;
+					tmpIntU1 *= edgeJ[i] * 0.5 * (lastLayerSolution[iRowU1Current] + lastLayerSolution[iRowU2Current]);
+					rightPart_data[iRowU1Current] -= tmpIntU1;
+
+					if (abs(tmpIntU2) <= EPS) tmpIntU2 = 0.0;
+
+					tmpIntU2 *= TAU;
+					tmpIntU2 *= edgeJ[i] * 0.5 * (lastLayerSolution[iRowU1Current] + lastLayerSolution[iRowU2Current]);
+					rightPart_data[iRowU2Current] += tmpIntU2;*/
+				}
+			}
+		}
+		else {
+			isBoundary = true;
+			int iRowU1 = c1 * A_block_size + 6;
+			int iColU1 = c1 * A_block_size + uBlock * A_small_block_size;
+
+			for (int m = 0; m < funcCount; m++)
+			{
+				for (int j = 0; j < A_small_block_size; j++)
+				{
+					int iRowU1Current = iRowU1 + j;
+
+					float tmpIntU1 = 0.0;
+
+					for (int iGP = 0; iGP < edgeGPCount; iGP++)
+					{
+						float cGP1 = edgeWGP[iGP] * baseF(m, c1, edgeGP[i][iGP].x, edgeGP[i][iGP].y) * baseF(j, c1, edgeGP[i][iGP].x, edgeGP[i][iGP].y);
+
+						tmpIntU1 += (edgeNormal[i].x * cGP1) + (edgeNormal[i].y * cGP1);
+					}
+
+					if (abs(tmpIntU1) <= EPS) tmpIntU1 = 0.0;
+
+					//на границе 0
+					tmpIntU1 *= TAU;
+					tmpIntU1 *= edgeJ[i] * 0.0;
+					rightPart_data[iRowU1Current] -= tmpIntU1;
+				}
+			}
+		}
+	}
 }
 
 // initialization matrix for implicit method
 void initMatrix(CSRMatrix& A)
 {
+	init_A_without_surf(A);
+	init_A_surf(A);
+}
+	
+void init_A_without_surf(CSRMatrix& A) {
+
 	const int qxBlock = 0;
 	const int qyBlock = 1;
 	const int uBlock = 2;
@@ -2420,9 +2550,9 @@ void initMatrix(CSRMatrix& A)
 
 			tmpInt *= cellJ[iCell];
 
-			if (iSmallBlockId == uBlock)
+			if (iSmallBlockId != uBlock)
 			{
-				tmpInt /= TAU;
+				tmpInt *= TAU;
 			}
 
 			A.set(i, colId + j, tmpInt);
@@ -2444,9 +2574,10 @@ void initMatrix(CSRMatrix& A)
 
 				if (abs(tmpInt) <= EPS) tmpInt = 0.0;
 
+				tmpInt *= TAU;
 				tmpInt = tmpInt * cellJ[iCell];
 
-				A.add(i, colId + j, tmpInt);
+				A.add(i, colId + j + 6, tmpInt);
 			}
 		}
 		// calculate vol integral values for qy-block
@@ -2465,9 +2596,10 @@ void initMatrix(CSRMatrix& A)
 
 				if (abs(tmpInt) <= EPS) tmpInt = 0.0;
 
+				tmpInt *= TAU;
 				tmpInt = tmpInt * cellJ[iCell];
 
-				A.add(i, colId + j, tmpInt);
+				A.add(i, colId + j + 3, tmpInt);
 			}
 		}
 		// calculate vol integral values for u-block
@@ -2475,33 +2607,47 @@ void initMatrix(CSRMatrix& A)
 		{
 			for (int j = 0; j < A_small_block_size; j++)
 			{
-				float tmpInt = 0.0;
+				float tmpIntQx = 0.0;
+				float tmpIntQy = 0.0;
 
 				for (int iGP = 0; iGP < cellGPCount; iGP++)
 				{
 					float bfDFDx = baseDFDx(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
 					float bfDFDy = baseDFDy(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
 
-					tmpInt += cellWGP[iGP] * (bfDFDx + bfDFDy) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+					tmpIntQx += cellWGP[iGP] * bfDFDx * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+					tmpIntQy += cellWGP[iGP] * bfDFDy * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
 				}
 
-				if (abs(tmpInt) <= EPS) tmpInt = 0.0;
+				if (abs(tmpIntQx) <= EPS) tmpIntQx = 0.0;
+				if (abs(tmpIntQy) <= EPS) tmpIntQy = 0.0;
 
-				tmpInt = tmpInt * cellJ[iCell];
+				tmpIntQx *= TAU;
+				tmpIntQy *= TAU;
+				tmpIntQx = tmpIntQx * cellJ[iCell];
+				tmpIntQy = tmpIntQy * cellJ[iCell];
 
-				A.add(i, colId + j, tmpInt);
+				A.add(i, colId + j - 6, tmpIntQx);
+				A.add(i, colId + j - 3, tmpIntQy);
 			}
 		}
 	}
-	/*
-	// calculate surf integral
+}
+
+void init_A_surf(CSRMatrix& A) {
+	const int qxBlock = 0;
+	const int qyBlock = 1;
+	const int uBlock = 2;
+
+	A_size = A_block_size * cellsCount;	// 9 * cellsCount
+	//calculate surf integral
 	int c1, c2;
 	bool isBoundary = false;
 	for (int i = 0; i < edgesCount; i++)
-	{ 
+	{
 		c1 = edgeCell1[i];
 		c2 = edgeCell2[i];
-		if (c2 >= 0) { 
+		if (c2 >= 0) {
 			isBoundary = false;
 			int iRowU1 = c1 * A_block_size + 6;
 			int iRowU2 = c2 * A_block_size + 6;
@@ -2517,80 +2663,78 @@ void initMatrix(CSRMatrix& A)
 			int iColQx1 = c1 * A_block_size + qxBlock * A_small_block_size;
 			int iColQx2 = c2 * A_block_size + qxBlock * A_small_block_size;
 
+			//цикл по пробным функциям
 			for (int m = 0; m < funcCount; m++)
 			{
+				//цикл по базисным функциям
 				for (int j = 0; j < A_small_block_size; j++)
 				{
-					int iRowU1Current = iRowU1 + m;
-					int iRowU2Current = iRowU2 + m;
-					int iRowQx1Current = iRowQx1 + m;
-					int iRowQx2Current = iRowQx2 + m;
-					int iRowQy1Current = iRowQy1 + m;
-					int iRowQy2Current = iRowQy2 + m;
+					int iRowU1Current = iRowU1 + j;
+					int iRowU2Current = iRowU2 + j;
+					int iRowQx1Current = iRowQx1 + j;
+					int iRowQx2Current = iRowQx2 + j;
+					int iRowQy1Current = iRowQy1 + j;
+					int iRowQy2Current = iRowQy2 + j;
 
-					float tmpIntU1 = 0.0, tmpIntQx1 = 0.0, tmpIntQy1 = 0.0;
-					float tmpIntU2 = 0.0, tmpIntQx2 = 0.0, tmpIntQy2 = 0.0;
+					float tmpIntU1 = 0.0, tmpIntQxForU1 = 0.0, tmpIntQyForU1 = 0.0, tmpIntQx1 = 0.0, tmpIntQy1 = 0.0;
+					float tmpIntU2 = 0.0, tmpIntQxForU2 = 0.0, tmpIntQyForU2 = 0.0, tmpIntQx2 = 0.0, tmpIntQy2 = 0.0;
+
+					float tmpC1C1_x = 0.0, tmpC1C2_x = 0.0, tmpC2C2_x = 0.0, tmpC2C1_x = 0.0;
+					float tmpC1C1_y = 0.0, tmpC1C2_y = 0.0, tmpC2C2_y = 0.0, tmpC2C1_y = 0.0;
 
 					for (int iGP = 0; iGP < edgeGPCount; iGP++)
 					{
-						float cGP1 = edgeWGP[iGP] * baseF(m, c1, edgeGP[i][iGP].x, edgeGP[i][iGP].y) * baseF(j, c1, edgeGP[i][iGP].x, edgeGP[i][iGP].y);
-						float cGP2 = edgeWGP[iGP] * baseF(m, c2, edgeGP[i][iGP].x, edgeGP[i][iGP].y) * baseF(j, c2, edgeGP[i][iGP].x, edgeGP[i][iGP].y);
+						float cGP1_1 = edgeWGP[iGP] * baseF(m, c1, edgeGP[i][iGP].x, edgeGP[i][iGP].y) * baseF(j, c1, edgeGP[i][iGP].x, edgeGP[i][iGP].y);
+						float cGP1_2 = edgeWGP[iGP] * baseF(m, c1, edgeGP[i][iGP].x, edgeGP[i][iGP].y) * baseF(j, c2, edgeGP[i][iGP].x, edgeGP[i][iGP].y);
+						float cGP2_2 = edgeWGP[iGP] * baseF(m, c2, edgeGP[i][iGP].x, edgeGP[i][iGP].y) * baseF(j, c2, edgeGP[i][iGP].x, edgeGP[i][iGP].y);
+						float cGP2_1 = edgeWGP[iGP] * baseF(m, c2, edgeGP[i][iGP].x, edgeGP[i][iGP].y) * baseF(j, c1, edgeGP[i][iGP].x, edgeGP[i][iGP].y);
 
-						tmpIntU1 += (edgeNormal[i].x * cGP1) + (edgeNormal[i].y * cGP1);
-						tmpIntU2 += (edgeNormal[i].x * cGP2) + (edgeNormal[i].y * cGP2);
+						tmpC1C2_x += (edgeNormal[i].x * cGP1_1 + edgeNormal[i].x * cGP1_2);
+						tmpC2C1_x += (edgeNormal[i].x * cGP2_1 + edgeNormal[i].x * cGP2_2);
 
-						tmpIntQx1 += edgeNormal[i].x * cGP1;
-						tmpIntQx2 += edgeNormal[i].x * cGP2;
-
-						tmpIntQy1 += edgeNormal[i].y * cGP1;
-						tmpIntQy2 += edgeNormal[i].y * cGP2;
+						tmpC1C2_y += (edgeNormal[i].y * cGP1_1 + edgeNormal[i].y * cGP1_2);
+						tmpC2C1_y += (edgeNormal[i].y * cGP2_1 + edgeNormal[i].y * cGP2_2);
 					}
 
-					if (abs(tmpIntU1) <= EPS) tmpIntU1 = 0.0;
+					//for u_qx
+					addEdgeIntForBlock(A, iRowU1Current, iColQx1 + j, -tmpC1C2_x, i);
+					addEdgeIntForBlock(A, iRowU2Current, iColQx2 + j, tmpC1C2_x, i);
+					addEdgeIntForBlock(A, iRowU2Current, iColQx2 + j, -tmpC2C1_x, i);
+					addEdgeIntForBlock(A, iRowU1Current, iColQx1 + j, tmpC2C1_x, i);
 
-					// for u
-					tmpIntU1 *= edgeJ[i] * 0.5;
-					A.add(iRowU1Current, iColU1 + j, -tmpIntU1);
+					//for u_qy
+					addEdgeIntForBlock(A, iRowU1Current, iColQy1 + j, -tmpC1C2_y, i);
+					addEdgeIntForBlock(A, iRowU2Current, iColQy2 + j, tmpC1C2_y, i);
+					addEdgeIntForBlock(A, iRowU2Current, iColQy2 + j, -tmpC2C1_y, i);
+					addEdgeIntForBlock(A, iRowU1Current, iColQy1 + j, tmpC2C1_y, i);
 
-					if (abs(tmpIntU2) <= EPS) tmpIntU2 = 0.0;
+					//for qx_u
+					addEdgeIntForBlock(A, iRowQx1Current, iColU1 + j, -tmpC1C2_x, i);
+					addEdgeIntForBlock(A, iRowQx2Current, iColU2 + j, tmpC1C2_x, i);
+					addEdgeIntForBlock(A, iRowQx2Current, iColU2 + j, -tmpC1C2_x, i);
+					addEdgeIntForBlock(A, iRowQx1Current, iColU1 + j, tmpC1C2_x, i);
 
-					tmpIntU2 *= edgeJ[i] * 0.5;
-					A.add(iRowU2Current, iColU2 + j, -tmpIntU2);
-
-					// for qx
-					if (abs(tmpIntQx1) <= EPS) tmpIntQx1 = 0.0;
-
-					tmpIntQx1 *= edgeJ[i] * 0.5;
-					A.add(iRowQx1Current, iColQx1 + j, -tmpIntQx1);
-
-					if (abs(tmpIntQx2) <= EPS) tmpIntQx2 = 0.0;
-
-					tmpIntQx2 *= edgeJ[i] * 0.5;
-					A.add(iRowQx2Current, iColQx2 + j, -tmpIntQx2);
-
-					// for qy
-					if (abs(tmpIntQy1) <= EPS) tmpIntQy1 = 0.0;
-
-					tmpIntQy1 *= edgeJ[i] * 0.5;
-					A.add(iRowQy1Current, iColQy1 + j, -tmpIntQy1);
-
-					if (abs(tmpIntQy2) <= EPS) tmpIntQy2 = 0.0;
-
-					tmpIntQy2 *= edgeJ[i] * 0.5;
-					A.add(iRowQy2Current, iColQy2 + j, -tmpIntQy2);
+					//for qy_u
+					addEdgeIntForBlock(A, iRowQy1Current, iColU1 + j, -tmpC1C2_y, i);
+					addEdgeIntForBlock(A, iRowQy2Current, iColU2 + j, tmpC1C2_y, i);
+					addEdgeIntForBlock(A, iRowQy2Current, iColU2 + j, -tmpC1C2_y, i);
+					addEdgeIntForBlock(A, iRowQy1Current, iColU1 + j, tmpC1C2_y, i);
 				}
 			}
 		}
-		else { 
+		else {
 			isBoundary = true;
-			int iRowU1 = c1 * A_block_size + 6;
-			int iColU1 = c1 * A_block_size + uBlock * A_small_block_size;
+			int iRowQx1 = c1 * A_block_size;
+			int iRowQy1 = c1 * A_block_size + 3;
+			int iColQx1 = c1 * A_block_size + qxBlock * A_small_block_size;
+			int iColQy1 = c1 * A_block_size + qyBlock * A_small_block_size;
 
 			for (int m = 0; m < funcCount; m++)
 			{
 				for (int j = 0; j < A_small_block_size; j++)
 				{
-					int iRowU1Current = iRowU1 + m;
+					int iRowQxCurrent = iRowQx1 + j;
+					int iRowQyCurrent = iRowQy1 + j;
 
 					float tmpIntU1 = 0.0;
 
@@ -2603,10 +2747,249 @@ void initMatrix(CSRMatrix& A)
 
 					if (abs(tmpIntU1) <= EPS) tmpIntU1 = 0.0;
 
-					tmpIntU1 *= edgeJ[i] * 0.5;
-					A.add(iRowU1Current, iColU1 + j, -tmpIntU1);
+					tmpIntU1 *= edgeJ[i] * 0.0;
+					A.add(iRowQxCurrent, iColQx1 + j + 6, -tmpIntU1);
+					A.add(iRowQyCurrent, iColQy1 + j + 3, -tmpIntU1);
 				}
 			}
-		}*/
+		}
+	}
 }
-	
+
+void print_right_part(const char* fileName, float* rightPart_data) {
+	FILE* fp = fopen(fileName, "w");
+	for (int i = 0; i < A_block_size * cellsCount; i++) {
+		fprintf(fp, "%10.8f ", rightPart_data[i]);
+		fprintf(fp, "\n");
+	}
+}
+
+void addEdgeIntForRightPart(float* rightPart_data, float* lastLayerSolution, int iRowU1Current, int iRowU2Current, float value, int i) {
+	float newValue = value;
+	if (abs(newValue) <= EPS) newValue = 0.0;
+
+	newValue *= TAU;
+	newValue *= edgeJ[i] * 0.5 * (lastLayerSolution[iRowU1Current] + lastLayerSolution[iRowU2Current]);
+	rightPart_data[iRowU1Current] += newValue;
+}
+
+void addEdgeIntForBlock(CSRMatrix& A, int iRowU1Current, int iCurrentCol, float value, int i) {
+	float newValue = value;
+	if (abs(newValue) <= EPS) newValue = 0.0;
+	newValue *= TAU;
+	newValue *= edgeJ[i] * 0.5;
+	A.add(iRowU1Current, iRowU1Current, newValue);
+}
+
+//void init_A_without_surf(CSRMatrix& A) {
+//
+//	const int qxBlock = 0;
+//	const int qyBlock = 1;
+//	const int uBlock = 2;
+//
+//	A_size = A_block_size * cellsCount;	// 9 * cellsCount
+//
+//	//CSRMatrix A(A_size);
+//
+//	int iCell = 0;
+//	int iSmallBlockId = 0;
+//
+//	// begin matrix initialization
+//	for (int i = 0; i < A_size; i++)
+//	{
+//		if ((i % A_small_block_size) == 0 && (i != 0))
+//		{
+//			iSmallBlockId++;
+//		}
+//
+//		if ((i % A_block_size) == 0 && (i != 0))
+//		{
+//			iCell++;
+//			iSmallBlockId = 0;
+//		}
+//
+//		// variable for current colum
+//		int colId = iCell * A_block_size + iSmallBlockId * A_small_block_size;
+//
+//		// rowId in each small block
+//		int rowId = i % A_small_block_size;
+//
+//		// сalculate the same values of the matrix A
+//		for (int j = 0; j < A_small_block_size; j++)
+//		{
+//			float tmpInt = 0.0;
+//			A.set(i, colId + j, 0.0);
+//
+//			/*if (iSmallBlockId == uBlock)
+//			{
+//				for (int iGP = 0; iGP < cellGPCount; iGP++)
+//				{
+//					tmpInt += cellWGP[iGP] * baseF(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+//				}
+//				tmpInt /= TAU;
+//			}
+//			else
+//			{
+//				for (int iGP = 0; iGP < cellGPCount; iGP++)
+//				{
+//					tmpInt += cellWGP[iGP] * baseF(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+//				}
+//			}*/
+//			for (int iGP = 0; iGP < cellGPCount; iGP++)
+//			{
+//				tmpInt += cellWGP[iGP] * baseF(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]) * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+//			}
+//
+//			tmpInt *= cellJ[iCell];
+//
+//			if (iSmallBlockId == uBlock)
+//			{
+//				tmpInt /= TAU;
+//			}
+//
+//			A.set(i, colId + j, tmpInt);
+//		}
+//
+//		// calculate vol integral values for qx-block
+//		if (iSmallBlockId == qxBlock)
+//		{
+//			for (int j = 0; j < A_small_block_size; j++)
+//			{
+//				float tmpInt = 0.0;
+//
+//				for (int iGP = 0; iGP < cellGPCount; iGP++)
+//				{
+//					float bfDFDx = baseDFDx(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+//
+//					tmpInt += cellWGP[iGP] * bfDFDx * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+//				}
+//
+//				if (abs(tmpInt) <= EPS) tmpInt = 0.0;
+//
+//				tmpInt = tmpInt * cellJ[iCell];
+//
+//				A.add(i, colId + j + 6, tmpInt);
+//			}
+//		}
+//		// calculate vol integral values for qy-block
+//		else if (iSmallBlockId == qyBlock)
+//		{
+//			for (int j = 0; j < A_small_block_size; j++)
+//			{
+//				float tmpInt = 0.0;
+//
+//				for (int iGP = 0; iGP < cellGPCount; iGP++)
+//				{
+//					float bfDFDy = baseDFDy(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+//
+//					tmpInt += cellWGP[iGP] * bfDFDy * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+//				}
+//
+//				if (abs(tmpInt) <= EPS) tmpInt = 0.0;
+//
+//				tmpInt = tmpInt * cellJ[iCell];
+//
+//				A.add(i, colId + j + 3, tmpInt);
+//			}
+//		}
+//		// calculate vol integral values for u-block
+//		else if (iSmallBlockId == uBlock)
+//		{
+//			for (int j = 0; j < A_small_block_size; j++)
+//			{
+//				float tmpIntQx = 0.0;
+//				float tmpIntQy = 0.0;
+//
+//				for (int iGP = 0; iGP < cellGPCount; iGP++)
+//				{
+//					float bfDFDx = baseDFDx(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+//					float bfDFDy = baseDFDy(rowId, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+//
+//					tmpIntQx += cellWGP[iGP] * bfDFDx * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+//					tmpIntQy += cellWGP[iGP] * bfDFDy * baseF(j, iCell, cellGPx[iCell * cellGPCount + iGP], cellGPy[iCell * cellGPCount + iGP]);
+//				}
+//
+//				if (abs(tmpIntQx) <= EPS) tmpIntQx = 0.0;
+//				if (abs(tmpIntQy) <= EPS) tmpIntQy = 0.0;
+//
+//				tmpIntQx = tmpIntQx * cellJ[iCell];
+//				tmpIntQy = tmpIntQy * cellJ[iCell];
+//
+//				A.add(i, colId + j - 6, tmpIntQx);
+//				A.add(i, colId + j - 3, tmpIntQy);
+//			}
+//		}
+//	}
+//}
+
+//tmpIntU1 += (edgeNormal[i].x * cGP1) + (edgeNormal[i].y * cGP1);
+						//tmpIntU2 += (edgeNormal[i].x * cGP2) + (edgeNormal[i].y * cGP2);
+						/*tmpIntQxForU1 += edgeNormal[i].x * cGP1;
+						tmpIntQxForU2 += edgeNormal[i].x * cGP2;
+
+						tmpIntQyForU1 += edgeNormal[i].y * cGP1;
+						tmpIntQyForU2 += edgeNormal[i].y * cGP2;
+
+						tmpIntQx1 += edgeNormal[i].x * cGP1;
+						tmpIntQx2 += edgeNormal[i].x * cGP2;
+
+						tmpIntQy1 += edgeNormal[i].y * cGP1;
+						tmpIntQy2 += edgeNormal[i].y * cGP2;*/
+
+/*if (abs(tmpIntU1) <= EPS) tmpIntU1 = 0.0;
+
+					//// for u
+					//tmpIntU1 *= TAU;
+					//tmpIntU1 *= edgeJ[i] * 0.5;
+					//A.add(iRowU1Current, iColU1 + j, -tmpIntU1);
+
+					//if (abs(tmpIntU2) <= EPS) tmpIntU2 = 0.0;
+
+					//tmpIntU2 *= TAU;
+					//tmpIntU2 *= edgeJ[i] * 0.5;
+					//A.add(iRowU2Current, iColU2 + j, tmpIntU2);*/
+
+					//// for u_qx
+					//if (abs(tmpIntQxForU1) <= EPS) tmpIntQxForU1 = 0.0;
+					//tmpIntQxForU1 *= TAU;
+					//tmpIntQxForU1 *= edgeJ[i] * 0.5;
+					//A.add(iRowU1Current, iColQx1 + j, -tmpIntQxForU1);
+					//A.add(iRowU1Current, iColQx2 + j, -tmpIntQxForU1);
+
+					//if (abs(tmpIntQxForU2) <= EPS) tmpIntQxForU2 = 0.0;
+					//tmpIntQxForU2 *= TAU;
+					//tmpIntQxForU2 *= edgeJ[i] * 0.5;
+					//A.add(iRowU2Current, iColQx2 + j, tmpIntQxForU2);
+
+					//// for u_qy
+					//if (abs(tmpIntQyForU1) <= EPS) tmpIntQyForU1 = 0.0;
+					//tmpIntQyForU1 *= TAU;
+					//tmpIntQyForU1 *= edgeJ[i] * 0.5;
+					//A.add(iRowU1Current, iColQy1 + j, -tmpIntQyForU1);
+
+					//if (abs(tmpIntQyForU2) <= EPS) tmpIntQyForU2 = 0.0;
+					//tmpIntQyForU2 *= TAU;
+					//tmpIntQyForU2 *= edgeJ[i] * 0.5;
+					//A.add(iRowU2Current, iColQy2 + j, tmpIntQyForU2);
+
+					//// for qx
+					//if (abs(tmpIntQx1) <= EPS) tmpIntQx1 = 0.0;
+					//tmpIntQx1 *= TAU;
+					//tmpIntQx1 *= edgeJ[i] * 0.5;
+					//A.add(iRowQx1Current, iColQx1 + j + 6, -tmpIntQx1);
+
+					//if (abs(tmpIntQx2) <= EPS) tmpIntQx2 = 0.0;
+					//tmpIntQx2 *= TAU;
+					//tmpIntQx2 *= edgeJ[i] * 0.5;
+					//A.add(iRowQx2Current, iColQx2 + j + 6, tmpIntQx2);
+
+					//// for qy
+					//if (abs(tmpIntQy1) <= EPS) tmpIntQy1 = 0.0;
+					//tmpIntQy1 *= TAU;
+					//tmpIntQy1 *= edgeJ[i] * 0.5;
+					//A.add(iRowQy1Current, iColQy1 + j + 3, -tmpIntQy1);
+
+					//if (abs(tmpIntQy2) <= EPS) tmpIntQy2 = 0.0;
+					//tmpIntQy2 *= TAU;
+					//tmpIntQy2 *= edgeJ[i] * 0.5;
+					//A.add(iRowQy2Current, iColQy2 + j + 3, tmpIntQy2);
